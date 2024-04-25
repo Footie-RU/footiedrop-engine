@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule } from '@nestjs/config';
 import { User } from './entities/user.entity';
 import { UserModule } from './users/user.module';
 import { Order } from './entities/order.entity';
@@ -10,6 +9,7 @@ import { Payment } from './entities/payment.entity';
 import { Settings } from './entities/settings.entity';
 import { VerificationOtp } from './entities/verify.entity';
 import { AuthModule } from './auth/auth.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [

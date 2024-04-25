@@ -19,7 +19,7 @@ export class VerificationOtp {
 
   @Column({
     type: 'timestamp',
-    default: '(current_timestamp() + interval 10 minute)',
+    default: () => '(current_timestamp()',
   })
   expires_at: Date;
 }
