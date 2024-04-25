@@ -68,4 +68,8 @@ export class User {
 
   @Column(() => Settings)
   settings: Settings;
+
+  // column for bearer token
+  @Column({ nullable: true })
+  token: string;
 }

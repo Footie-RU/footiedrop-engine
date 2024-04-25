@@ -1,13 +1,12 @@
 import { Controller, Get, Param, Post, Body } from '@nestjs/common';
+import { SkipAuth } from 'src/core/decorators/meta.decorator';
 import {
   CreateUserDto,
-  LoginUserWithEmailDto,
-  LoginUserWithPhoneDto,
   ResendVerificationOtpDto,
   VerifyOtpDto,
 } from 'src/core/dto/user.dto';
 import { RequestResponse } from 'src/core/interfaces/index.interface';
-import { UserService } from 'src/core/services/user.service';
+import { UserService } from 'src/users/user.service';
 
 @Controller('users')
 export class UserController {
@@ -23,11 +22,13 @@ export class UserController {
     return this.userService.findOne(id);
   }
 
+  @SkipAuth()
   @Post()
   create(@Body() createUserDto: CreateUserDto): Promise<RequestResponse> {
     return this.userService.create(createUserDto);
   }
 
+  @SkipAuth()
   @Post('resendOtp')
   resendOtp(
     @Body() payload: ResendVerificationOtpDto,
@@ -35,22 +36,9 @@ export class UserController {
     return this.userService.generateOtp(payload.email, true);
   }
 
+  @SkipAuth()
   @Post('verify')
   verifyOtp(@Body() payload: VerifyOtpDto): Promise<RequestResponse> {
     return this.userService.verifyOtp(payload.email, payload.otp);
-  }
-
-  @Post('loginWithEmail')
-  loginWithEmail(
-    @Body() payload: LoginUserWithEmailDto,
-  ): Promise<RequestResponse> {
-    return this.userService.validateUserViaEmail(payload);
-  }
-
-  @Post('loginWithPhone')
-  loginWithPhone(
-    @Body() payload: LoginUserWithPhoneDto,
-  ): Promise<RequestResponse> {
-    return this.userService.validateUserViaPhone(payload);
   }
 }

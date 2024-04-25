@@ -4,11 +4,12 @@ import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { User } from './entities/user.entity';
-import { UserModule } from './modules/user.module';
+import { UserModule } from './users/user.module';
 import { Order } from './entities/order.entity';
 import { Payment } from './entities/payment.entity';
 import { Settings } from './entities/settings.entity';
 import { VerificationOtp } from './entities/verify.entity';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { VerificationOtp } from './entities/verify.entity';
       entities: [User, Order, Payment, Settings, VerificationOtp],
       // synchronize: true,
     }),
+    AuthModule,
     UserModule,
   ],
   controllers: [AppController],

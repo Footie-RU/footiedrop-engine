@@ -2,13 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/entities/user.entity';
 import { Repository } from 'typeorm';
-import { RequestResponse } from '../interfaces/index.interface';
-import {
-  CreateUserDto,
-  LoginUserWithEmailDto,
-  LoginUserWithPhoneDto,
-} from '../dto/user.dto';
-import { EmailService } from './mailer.service';
+import { RequestResponse } from '../core/interfaces/index.interface';
+import { CreateUserDto } from '../core/dto/user.dto';
+import { EmailService } from '../core/services/mailer.service';
 import { VerificationOtp } from 'src/entities/verify.entity';
 
 @Injectable()
@@ -71,14 +67,27 @@ export class UserService {
   async create(createUserDto: CreateUserDto): Promise<RequestResponse> {
     try {
       // check if user with email already exists
-      const userExists = await this.userRepository.findOne({
+      const userWithEmailExists = await this.userRepository.findOne({
         where: { email: createUserDto.email },
       });
 
-      if (userExists) {
+      if (userWithEmailExists) {
         return {
           result: 'error',
           message: 'User with email already exists',
+          data: null,
+        };
+      }
+
+      // check if user with phone number already exists
+      const userWithPhoneExists = await this.userRepository.findOne({
+        where: { phone: createUserDto.phone },
+      });
+
+      if (userWithPhoneExists) {
+        return {
+          result: 'error',
+          message: 'User with phone number already exists',
           data: null,
         };
       }
@@ -249,120 +258,6 @@ export class UserService {
       return {
         result: 'error',
         message: error.message || 'Failed to verify OTP',
-        data: null,
-      };
-    }
-  }
-
-  /**
-   * Login user with email and password
-   * @param {string} email
-   * @param {string} password
-   * @returns {Promise<RequestResponse>}
-   * @memberof UserService
-   * @todo Implement this method
-   */
-  async validateUserViaEmail(
-    userDto: LoginUserWithEmailDto,
-  ): Promise<RequestResponse> {
-    try {
-      const user = await this.userRepository.findOne({
-        where: { email: userDto.email },
-      });
-
-      if (!user) {
-        return {
-          result: 'error',
-          message: 'User not found',
-          data: null,
-        };
-      }
-
-      if (user.password !== userDto.password) {
-        return {
-          result: 'error',
-          message: 'Invalid password',
-          data: null,
-        };
-      }
-
-      if (user.role !== userDto.role) {
-        return {
-          result: 'error',
-          message: 'User is not authorized to login as a ' + userDto.role,
-          data: null,
-        };
-      }
-
-      // Update last login date
-      await this.userRepository.update(user.id, { lastLogin: new Date() });
-
-      return {
-        result: 'success',
-        message: 'User logged in successfully',
-        data: user,
-      };
-    } catch (error) {
-      return {
-        result: 'error',
-        message: error.message || 'Failed to login user',
-        data: null,
-      };
-    }
-  }
-
-  /**
-   * Login user with phone and password
-   * @param {string} phone
-   * @param {string} password
-   * @returns {Promise<RequestResponse>}
-   * @memberof UserService
-   * @todo Implement this method
-   */
-  async validateUserViaPhone(
-    userDto: LoginUserWithPhoneDto,
-  ): Promise<RequestResponse> {
-    try {
-      const user = await this.userRepository.findOne({
-        where: { phone: userDto.phone },
-      });
-
-      if (!user) {
-        return {
-          result: 'error',
-          message: 'User not found',
-          data: null,
-        };
-      }
-
-      if (user.password !== userDto.password) {
-        return {
-          result: 'error',
-          message: 'Invalid password',
-          data: null,
-        };
-      }
-
-      if (user.role !== userDto.role) {
-        return {
-          result: 'error',
-          message: 'User is not authorized to login as a ' + userDto.role,
-          data: null,
-        };
-      }
-
-      // Update last login date
-      await this.userRepository.update(user.id, { lastLogin: new Date() });
-
-      return {
-        result: 'success',
-        message: 'User logged in successfully',
-        data: user,
-      };
-    } catch (error) {
-      return {
-        result: 'error',
-        message: error.message || 'Failed to login user',
         data: null,
       };
     }
