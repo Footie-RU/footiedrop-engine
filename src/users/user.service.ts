@@ -129,7 +129,7 @@ export class UserService {
         };
       }
 
-      await this.userRepository.save(rest);
+      const user = await this.userRepository.save(rest);
 
       // Send welcome email to user
       const message = `Welcome to our platform, ${createUserDto.firstName}!`;
@@ -151,7 +151,7 @@ export class UserService {
       return {
         result: 'success',
         message: 'User created successfully',
-        data: {},
+        data: user,
       };
     } catch (error) {
       return {
