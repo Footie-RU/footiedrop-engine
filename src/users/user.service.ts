@@ -3,9 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/entities/user.entity';
 import { Repository } from 'typeorm';
 import { RequestResponse } from '../core/interfaces/index.interface';
-import { CreateUserDto } from '../core/dto/user.dto';
+import { CreateUserDto, SendPasswordResetEmailDto } from '../core/dto/user.dto';
 import { EmailService } from '../core/services/mailer.service';
 import { VerificationOtp } from 'src/entities/verify.entity';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class UserService {
@@ -15,6 +16,7 @@ export class UserService {
     private mailerService: EmailService,
     @InjectRepository(VerificationOtp)
     private otpRepository: Repository<VerificationOtp>,
+    private jwtService: JwtService,
   ) {}
 
   /**
@@ -39,7 +41,7 @@ export class UserService {
    * @param id
    * @returns
    */
-  async findOne(id: string): Promise<RequestResponse> {
+  async findOneById(id: string): Promise<RequestResponse> {
     try {
       const user = await this.userRepository.findOne({ where: { id } });
       if (!user) {
@@ -52,7 +54,32 @@ export class UserService {
       return {
         result: 'success',
         message: 'User fetched successfully',
-        data: user,
+        data: { ...user, password: undefined },
+      };
+    } catch (error) {
+      throw new Error('Failed to fetch user.');
+    }
+  }
+
+  /**
+   * Find a user by email
+   * @param email
+   * @returns
+   */
+  async findOneByEmail(email: string): Promise<RequestResponse> {
+    try {
+      const user = await this.userRepository.findOne({ where: { email } });
+      if (!user) {
+        return {
+          result: 'error',
+          message: 'User not found',
+          data: null,
+        };
+      }
+      return {
+        result: 'success',
+        message: 'User fetched successfully',
+        data: { ...user, password: undefined },
       };
     } catch (error) {
       throw new Error('Failed to fetch user.');
@@ -102,7 +129,7 @@ export class UserService {
         };
       }
 
-      const newUser = await this.userRepository.save(rest);
+      await this.userRepository.save(rest);
 
       // Send welcome email to user
       const message = `Welcome to our platform, ${createUserDto.firstName}!`;
@@ -124,7 +151,7 @@ export class UserService {
       return {
         result: 'success',
         message: 'User created successfully',
-        data: newUser,
+        data: {},
       };
     } catch (error) {
       return {
@@ -258,6 +285,277 @@ export class UserService {
       return {
         result: 'error',
         message: error.message || 'Failed to verify OTP',
+        data: null,
+      };
+    }
+  }
+
+  // reset password by sending a reset email
+  /**
+   * Reset user password
+   * @param {SendPasswordResetEmailDto} payload
+   */
+  async resetPassword(
+    payload: SendPasswordResetEmailDto,
+  ): Promise<RequestResponse> {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { email: payload.email },
+      });
+
+      if (!user) {
+        return {
+          result: 'error',
+          message: 'User not found',
+          data: null,
+        };
+      }
+
+      const otpResponse = await this.generateResetToken(payload);
+
+      if (otpResponse.result === 'error') {
+        return otpResponse;
+      }
+
+      return {
+        result: 'success',
+        message: 'Password reset email sent successfully',
+        data: null,
+      };
+    } catch (error) {
+      return {
+        result: 'error',
+        message: error.message || 'Failed to reset password',
+        data: null,
+      };
+    }
+  }
+
+  /**
+   * Generate token for reset password
+   * @param {SendPasswordResetEmailDto} payload
+   * @param {boolean}
+   * @returns {Promise<RequestResponse>}
+   */
+  async generateResetToken(
+    payload: SendPasswordResetEmailDto,
+  ): Promise<RequestResponse> {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { email: payload.email },
+      });
+
+      if (!user) {
+        return {
+          result: 'error',
+          message: 'User not found',
+          data: null,
+        };
+      }
+
+      // generate token with jwt and set expiry time, and save it to the user
+      const token = await this.jwtService.signAsync(payload, {
+        secret: 'asaskhawew',
+        expiresIn: '10m',
+      });
+
+      // save the token to the user
+      await this.userRepository.update(user.id, { resetPasswordToken: token });
+
+      // send reset password link back to the user
+      // set the link based on the environment variable
+      const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
+
+      // send email to user
+      const message = `Click the link below to reset your password: ${resetLink}`;
+
+      await this.mailerService.sendEmail(
+        'team',
+        user.email,
+        'Password Reset',
+        message,
+      );
+
+      return {
+        result: 'success',
+        message: 'Password reset email sent successfully',
+        data: null,
+      };
+    } catch (error) {
+      console.log(error);
+      return {
+        result: 'error',
+        message: error.message || 'Failed to generate reset token',
+        data: null,
+      };
+    }
+  }
+
+  /**
+   * Verify Reset password token
+   * @param {string} token
+   * @return {Promise<RequestResponse>}
+   * @description Checks if the token is valid and not expired by checking the token validity using jwt and checking the database
+   */
+  async verifyResetToken(token: string): Promise<RequestResponse> {
+    try {
+      const decoded = this.jwtService.verify(token, {
+        secret: 'asaskhawew',
+      });
+
+      if (!decoded) {
+        return {
+          result: 'error',
+          message: 'Token expired',
+          data: null,
+        };
+      }
+
+      const user = await this.userRepository.findOne({
+        where: { email: decoded.email },
+      });
+
+      if (!user) {
+        return {
+          result: 'error',
+          message: 'User not found',
+          data: null,
+        };
+      }
+
+      if (user.resetPasswordToken !== token) {
+        return {
+          result: 'error',
+          message: 'Invalid token',
+          data: { valid: false },
+        };
+      }
+
+      return {
+        result: 'success',
+        message: 'Token verified successfully',
+        data: { valid: true },
+      };
+    } catch (error) {
+      return {
+        result: 'error',
+        message: error.message || 'Failed to verify token',
+        data: null,
+      };
+    }
+  }
+
+  /**
+   * Update user password
+   * @param {string} token
+   * @param {string} password
+   * @returns {Promise<RequestResponse>}
+   */
+  async updatePassword(
+    token: string,
+    password: string,
+  ): Promise<RequestResponse> {
+    try {
+      const decoded = this.jwtService.verify(token, {
+        secret: 'asaskhawew',
+      });
+
+      if (!decoded) {
+        return {
+          result: 'error',
+          message: 'Token expired',
+          data: null,
+        };
+      }
+
+      const user = await this.userRepository.findOne({
+        where: { email: decoded.email },
+      });
+
+      if (!user) {
+        return {
+          result: 'error',
+          message: 'User not found',
+          data: null,
+        };
+      }
+
+      if (user.resetPasswordToken !== token) {
+        return {
+          result: 'error',
+          message: 'Invalid token',
+          data: null,
+        };
+      }
+
+      await this.userRepository.update(user.id, { password });
+
+      return {
+        result: 'success',
+        message: 'Password updated successfully',
+        data: null,
+      };
+    } catch (error) {
+      return {
+        result: 'error',
+        message: error.message || 'Failed to update password',
+        data: null,
+      };
+    }
+  }
+
+  /**
+   * Change email address
+   * @param {string} email
+   * @param {string} newEmail
+   * @returns {Promise<RequestResponse>}
+   * @todo Implement this method
+   */
+  async changeEmail(email: string, newEmail: string): Promise<RequestResponse> {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { email },
+      });
+
+      if (!user) {
+        return {
+          result: 'error',
+          message: 'User not found',
+          data: null,
+        };
+      }
+
+      if (user.email === newEmail) {
+        return {
+          result: 'error',
+          message: 'Emails are the same',
+          data: null,
+        };
+      }
+
+      const userWithEmailExists = await this.userRepository.findOne({
+        where: { email: newEmail },
+      });
+
+      if (userWithEmailExists) {
+        return {
+          result: 'error',
+          message: 'User with email already exists',
+          data: null,
+        };
+      }
+
+      await this.userRepository.update(user.id, { email: newEmail });
+
+      return {
+        result: 'success',
+        message: 'Email updated successfully',
+        data: null,
+      };
+    } catch (error) {
+      return {
+        result: 'error',
+        message: error.message || 'Failed to update email',
         data: null,
       };
     }

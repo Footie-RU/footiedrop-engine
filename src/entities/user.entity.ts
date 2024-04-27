@@ -72,4 +72,7 @@ export class User {
   // column for bearer token
   @Column({ nullable: true })
   token: string;
+
+  @Column({ nullable: true })
+  resetPasswordToken: string;
 }

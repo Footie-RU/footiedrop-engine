@@ -34,9 +34,9 @@ export class CreateUserDto {
   @IsNotEmpty()
   readonly email: string;
 
-  // @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/, {
-  //   message: 'Password too weak',
-  // })
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/, {
+    message: 'Password too weak',
+  })
   @IsNotEmpty()
   @MinLength(4)
   @MaxLength(20)
@@ -54,7 +54,7 @@ export class CreateUserDto {
   @IsNotEmpty()
   readonly role: UserRole;
 
-  @Matches(/^(?:\+7|8)\s?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{2}[\s.-]?\d{2}$/, {
+  @Matches(/(^8|7|\+7)((\d{10})|(\s\(\d{3}\)\s\d{3}\s\d{2}\s\d{2}))/, {
     message: 'Invalid phone number',
   })
   @IsNotEmpty()
@@ -122,7 +122,7 @@ export class LoginUserWithEmailDto {
  * @implements {LoginUserWithPhoneDto}
  */
 export class LoginUserWithPhoneDto {
-  @Matches(/^(?:\+7|8)\s?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{2}[\s.-]?\d{2}$/, {
+  @Matches(/(^8|7|\+7)((\d{10})|(\s\(\d{3}\)\s\d{3}\s\d{2}\s\d{2}))/, {
     message: 'Invalid phone number',
   })
   @IsNotEmpty()
@@ -135,4 +135,44 @@ export class LoginUserWithPhoneDto {
   @IsEnum(UserRole)
   @IsNotEmpty()
   readonly role: UserRole;
+}
+
+/**
+ * Send password reset email
+ */
+export class SendPasswordResetEmailDto {
+  @IsEmail()
+  @IsNotEmpty()
+  readonly email: string;
+}
+
+/**
+ * Update password
+ */
+export class UpdatePasswordDto {
+  @IsString()
+  @IsNotEmpty()
+  readonly token: string;
+
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/, {
+    message: 'Password too weak',
+  })
+  @IsNotEmpty()
+  @MinLength(4)
+  @MaxLength(20)
+  @IsString()
+  readonly password: string;
+}
+
+/**
+ * Change email address
+ */
+export class ChangeEmailDto {
+  @IsEmail()
+  @IsNotEmpty()
+  readonly email: string;
+
+  @IsEmail()
+  @IsNotEmpty()
+  readonly newEmail: string;
 }

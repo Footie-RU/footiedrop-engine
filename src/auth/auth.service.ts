@@ -36,7 +36,7 @@ export class AuthService {
       if (!user) {
         return {
           result: 'error',
-          message: 'User not found',
+          message: 'Invalid email address',
           data: null,
         };
       }
@@ -69,7 +69,12 @@ export class AuthService {
       return {
         result: 'success',
         message: 'User logged in successfully',
-        data: { token: token },
+        data: {
+          token: token,
+          userId: user.id,
+          email: user.email,
+          role: user.role,
+        },
       };
     } catch (error) {
       return {
@@ -99,7 +104,7 @@ export class AuthService {
       if (!user) {
         return {
           result: 'error',
-          message: 'User not found',
+          message: 'Invalid phone number',
           data: null,
         };
       }
@@ -132,7 +137,12 @@ export class AuthService {
       return {
         result: 'success',
         message: 'User logged in successfully',
-        data: { token: token },
+        data: {
+          token: token,
+          userId: user.id,
+          email: user.email,
+          role: user.role,
+        },
       };
     } catch (error) {
       return {
@@ -186,7 +196,7 @@ export class AuthService {
       if (!user) {
         return {
           result: 'error',
-          message: 'User not found',
+          message: 'User with the email address does not exist',
           data: null,
         };
       }
