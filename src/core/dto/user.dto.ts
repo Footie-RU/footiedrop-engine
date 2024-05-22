@@ -34,13 +34,13 @@ export class CreateUserDto {
   @IsNotEmpty()
   readonly email: string;
 
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/, {
+  @IsString()
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{8,}$/, {
     message: 'Password too weak',
   })
   @IsNotEmpty()
   @MinLength(4)
   @MaxLength(20)
-  @IsString()
   readonly password: string;
 
   @Match('password', { message: 'Passwords do not match' })

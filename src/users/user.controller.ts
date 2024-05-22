@@ -1,4 +1,12 @@
-import { Controller, Get, Param, Post, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Post,
+  Body,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { SkipAuth } from 'src/core/decorators/meta.decorator';
 import {
   ChangeEmailDto,
@@ -31,7 +39,8 @@ export class UserController {
   }
 
   @SkipAuth()
-  @Post()
+  @Post('create')
+  @HttpCode(HttpStatus.CREATED)
   create(@Body() createUserDto: CreateUserDto): Promise<RequestResponse> {
     return this.userService.create(createUserDto);
   }
@@ -48,6 +57,14 @@ export class UserController {
   @Post('verify')
   verifyOtp(@Body() payload: VerifyOtpDto): Promise<RequestResponse> {
     return this.userService.verifyOtp(payload.email, payload.otp);
+  }
+
+  @SkipAuth()
+  @Get('verify/email/:email')
+  getEmailForVerification(
+    @Param('email') email: string,
+  ): Promise<RequestResponse> {
+    return this.userService.findOneByEmail(email);
   }
 
   @SkipAuth()
