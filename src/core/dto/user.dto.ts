@@ -7,10 +7,12 @@ import {
   MaxLength,
   MinLength,
   IsEnum,
+  Validate,
 } from 'class-validator';
 import { Match } from '../decorators/match.decorator';
 import { UserRole } from '../interfaces/user.interface';
 import { Languages } from '../interfaces/index.interface';
+import { IsRussianPhoneNumberConstraint } from '../../common/classes/custom-validator.class';
 
 /**
  * Data transfer object for creating a user
@@ -54,8 +56,8 @@ export class CreateUserDto {
   @IsNotEmpty()
   readonly role: UserRole;
 
-  @Matches(/(^8|7|\+7)((\d{10})|(\s\(\d{3}\)\s\d{3}\s\d{2}\s\d{2}))/, {
-    message: 'Invalid phone number',
+  @Validate(IsRussianPhoneNumberConstraint, {
+    message: 'Phone number must be a valid Russian phone number!',
   })
   @IsNotEmpty()
   readonly phone: string;
@@ -122,8 +124,8 @@ export class LoginUserWithEmailDto {
  * @implements {LoginUserWithPhoneDto}
  */
 export class LoginUserWithPhoneDto {
-  @Matches(/(^8|7|\+7)((\d{10})|(\s\(\d{3}\)\s\d{3}\s\d{2}\s\d{2}))/, {
-    message: 'Invalid phone number',
+  @Validate(IsRussianPhoneNumberConstraint, {
+    message: 'Phone number must be a valid Russian phone number!',
   })
   @IsNotEmpty()
   readonly phone: string;

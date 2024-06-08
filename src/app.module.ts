@@ -12,7 +12,7 @@ import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { SettingsModule } from './settings/settings.module';
 
-const Modules = [ AuthModule, UserModule, SettingsModule ];
+const Modules = [AuthModule, UserModule, SettingsModule];
 
 @Module({
   imports: [
@@ -27,7 +27,7 @@ const Modules = [ AuthModule, UserModule, SettingsModule ];
       entities: [User, Order, Payment, Settings, VerificationOtp],
       // synchronize: true,
     }),
-    ...Modules
+    ...Modules,
   ],
   controllers: [AppController],
   providers: [AppService],
