@@ -66,6 +66,7 @@ export class AuthService {
         token: token,
       });
 
+      console.log('User logged in successfully', user);
       return {
         result: 'success',
         message: 'User logged in successfully',
@@ -164,6 +165,8 @@ export class AuthService {
       const { password, ...rest } = await this.jwtService.verifyAsync(
         token.split(' ')[1],
       );
+
+      console.log('User token is valid');
       return {
         result: 'success',
         message: 'User token is valid',
@@ -206,6 +209,7 @@ export class AuthService {
         token: null,
       });
 
+      console.log('User logged out successfully');
       return {
         result: 'success',
         message: 'User logged out successfully',
