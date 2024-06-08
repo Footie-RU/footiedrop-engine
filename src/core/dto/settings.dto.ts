@@ -79,8 +79,6 @@ export class ChangeAddressDto {
  */
 export class ChangeProfilePictureDto {
   @IsNotEmpty()
+  @IsString()
   readonly userId: string;
-
-  @IsNotEmpty()
-  readonly profilePicture: string;
 }

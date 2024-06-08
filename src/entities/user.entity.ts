@@ -1,10 +1,18 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+  AfterLoad,
+} from 'typeorm';
 import { Order } from './order.entity';
 import { Payment } from './payment.entity';
 import { Settings } from './settings.entity';
 
 @Entity()
 export class User {
+  private readonly baseUrl: string = process.env.BACKEND_URL;
+
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -28,6 +36,20 @@ export class User {
 
   @Column({ nullable: true })
   profilePicture: string;
+
+  get profilePictureUrl(): string | null {
+    if (this.profilePicture) {
+      return `${this.baseUrl}/uploads/${this.profilePicture}`;
+    }
+    return null;
+  }
+
+  @AfterLoad()
+  updateProfilePicture(): void {
+    if (this.profilePicture) {
+      this.profilePicture = this.profilePictureUrl;
+    }
+  }
 
   @Column()
   addressStreet: string;

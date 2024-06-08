@@ -161,18 +161,31 @@ export class SettingsService {
     }
   }
 
+  /**
+   *
+   * @param {string} id
+   * @param {string} profilePicture
+   * @returns {Promise<RequestResponse>}
+   */
   async changeProfilePicture(
-    id: string,
-    profilePicture: string,
+    userId: string,
+    profilePicture: Express.Multer.File,
   ): Promise<RequestResponse> {
     try {
-      const user = await this.userRepository.findOne({ where: { id } });
+      const user = await this.userRepository.findOne({
+        where: { id: userId },
+      });
 
       if (!user) {
-        return { result: 'error', message: 'User not found', data: null };
+        return {
+          result: 'error',
+          message: 'User not found',
+          data: null,
+        };
       }
 
-      await this.userRepository.update(user.id, { profilePicture });
+      user.profilePicture = profilePicture.filename;
+      await this.userRepository.save(user);
 
       return {
         result: 'success',
