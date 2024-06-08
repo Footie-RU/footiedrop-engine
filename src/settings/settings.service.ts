@@ -4,6 +4,7 @@ import { User } from 'src/entities/user.entity';
 import { Repository } from 'typeorm';
 import { RequestResponse } from '../core/interfaces/index.interface';
 import { EmailService } from '../core/services/mailer.service';
+import { UpdateCommunicationPreferencesDto } from 'src/core/dto/settings.dto';
 
 @Injectable()
 export class SettingsService {
@@ -196,6 +197,51 @@ export class SettingsService {
       return {
         result: 'error',
         message: error.message || 'Failed to update profile picture',
+        data: null,
+      };
+    }
+  }
+
+  /**
+   * Update communication preferences for a user.
+   * @param {string} userId - User ID to identify the user.
+   * @param {boolean} notificationsEmail - Flag to enable/disable email notifications.
+   * @param {boolean} notificationsSms - Flag to enable/disable SMS notifications.
+   * @param {boolean} securityTwoFactorAuth - Flag to enable/disable two-factor authentication.
+   * @returns {Promise<RequestResponse>} - Request response indicating success or error.
+   */
+  async updateCommunicationPreferences(
+    dto: UpdateCommunicationPreferencesDto,
+  ): Promise<RequestResponse> {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { id: dto.userId },
+      });
+
+      if (!user) {
+        return {
+          result: 'error',
+          message: 'User not found',
+          data: null,
+        };
+      }
+
+      // Update user's communication preferences
+      user.settings.notificationsEmail = dto.notificationsEmail;
+      user.settings.notificationsSms = dto.notificationsSms;
+      user.settings.securityTwoFactorAuth = dto.securityTwoFactorAuth;
+
+      await this.userRepository.save(user);
+
+      return {
+        result: 'success',
+        message: 'Communication preferences updated successfully',
+        data: null,
+      };
+    } catch (error) {
+      return {
+        result: 'error',
+        message: error.message || 'Failed to update communication preferences',
         data: null,
       };
     }

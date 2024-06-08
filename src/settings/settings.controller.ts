@@ -13,6 +13,7 @@ import {
   ChangePhoneNumberDto,
   ChangeAddressDto,
   ChangeProfilePictureDto,
+  UpdateCommunicationPreferencesDto,
 } from 'src/core/dto/settings.dto';
 import { RequestResponse } from 'src/core/interfaces/index.interface';
 import { SettingsService } from 'src/settings/settings.service';
@@ -79,5 +80,13 @@ export class SettingsController {
       throw new BadRequestException('File is required');
     }
     return this.settingsService.changeProfilePicture(payload.userId, file);
+  }
+
+  @Post('updateCommunicationPreferences')
+  async updateCommunicationPreferences(
+    @Body()
+    dto: UpdateCommunicationPreferencesDto,
+  ): Promise<RequestResponse> {
+    return this.settingsService.updateCommunicationPreferences(dto);
   }
 }

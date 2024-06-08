@@ -5,6 +5,7 @@ import {
   Length,
   Validate,
   IsOptional,
+  IsBoolean,
 } from 'class-validator';
 import { IsRussianPhoneNumberConstraint } from '../../common/classes/custom-validator.class';
 
@@ -81,4 +82,23 @@ export class ChangeProfilePictureDto {
   @IsNotEmpty()
   @IsString()
   readonly userId: string;
+}
+
+/** Update Communication preferences */
+export class UpdateCommunicationPreferencesDto {
+  @IsNotEmpty()
+  @IsString()
+  userId: string;
+
+  @IsBoolean()
+  @IsNotEmpty()
+  notificationsEmail: boolean;
+
+  @IsBoolean()
+  @IsNotEmpty()
+  notificationsSms: boolean;
+
+  @IsBoolean()
+  @IsNotEmpty()
+  securityTwoFactorAuth: boolean;
 }
