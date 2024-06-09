@@ -1,10 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/entities/user.entity';
 import { Repository } from 'typeorm';
 import { RequestResponse } from '../core/interfaces/index.interface';
 import { EmailService } from '../core/services/mailer.service';
-import { UpdateCommunicationPreferencesDto } from 'src/core/dto/settings.dto';
+import {
+  ChangeLanguageDto,
+  UpdateCommunicationPreferencesDto,
+} from 'src/core/dto/settings.dto';
+import { compare, hash } from 'bcrypt';
+import { Settings } from 'src/entities/settings.entity';
 
 @Injectable()
 export class SettingsService {
@@ -14,6 +19,7 @@ export class SettingsService {
     private mailerService: EmailService,
   ) {}
 
+  // User profile settings
   /**
    * Change email address
    * @param {string} email
@@ -212,10 +218,11 @@ export class SettingsService {
    */
   async updateCommunicationPreferences(
     dto: UpdateCommunicationPreferencesDto,
+    userId: string,
   ): Promise<RequestResponse> {
     try {
       const user = await this.userRepository.findOne({
-        where: { id: dto.userId },
+        where: { id: userId },
       });
 
       if (!user) {
@@ -245,5 +252,86 @@ export class SettingsService {
         data: null,
       };
     }
+  }
+
+  // Security settings
+
+  /**
+   * Change user password
+   * @param {string} userId
+   * @param {string} currentPassword
+   * @param {string} newPassword
+   * @returns {Promise<RequestResponse>}
+   */
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<RequestResponse> {
+    try {
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+
+      if (!user) {
+        return {
+          result: 'error',
+          message: 'User not found',
+          data: null,
+        };
+      }
+
+      const isPasswordValid = await compare(currentPassword, user.password);
+
+      if (!isPasswordValid) {
+        return {
+          result: 'error',
+          message: 'Current password is incorrect',
+          data: null,
+        };
+      }
+
+      const hashedPassword = await hash(newPassword, 10);
+      await this.userRepository.update(user.id, { password: hashedPassword });
+
+      return {
+        result: 'success',
+        message: 'Password updated successfully',
+        data: null,
+      };
+    } catch (error) {
+      return {
+        result: 'error',
+        message: error.message || 'Failed to update password',
+        data: null,
+      };
+    }
+  }
+
+  //Others
+
+  async getSettings(userId: string): Promise<Settings> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user.settings;
+  }
+
+  async updateLanguage(
+    userId: string,
+    changeLanguageDto: ChangeLanguageDto,
+  ): Promise<Settings> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    user.settings.language = changeLanguageDto.language;
+    await this.userRepository.save(user);
+
+    return user.settings;
   }
 }

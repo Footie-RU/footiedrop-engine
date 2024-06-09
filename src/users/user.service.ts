@@ -7,6 +7,7 @@ import { CreateUserDto, SendPasswordResetEmailDto } from '../core/dto/user.dto';
 import { EmailService } from '../core/services/mailer.service';
 import { VerificationOtp } from 'src/entities/verify.entity';
 import { JwtService } from '@nestjs/jwt';
+import { hash } from 'bcrypt';
 
 @Injectable()
 export class UserService {
@@ -29,7 +30,9 @@ export class UserService {
       return {
         result: 'success',
         message: 'Users fetched successfully',
-        data: users,
+        data: users.map((u) => {
+          return { ...u };
+        }),
       };
     } catch (error) {
       throw new Error('Failed to fetch users.');
@@ -129,7 +132,12 @@ export class UserService {
         };
       }
 
-      const user = await this.userRepository.save(rest);
+      const hashedPassword = await hash(createUserDto.password, 10);
+
+      const user = await this.userRepository.save({
+        ...rest,
+        password: hashedPassword,
+      });
 
       // Send welcome email to user
       const message = `Welcome to our platform, ${createUserDto.firstName}!`;
@@ -488,7 +496,9 @@ export class UserService {
         };
       }
 
-      await this.userRepository.update(user.id, { password });
+      const hashedPassword = await hash(password, 10);
+
+      await this.userRepository.update(user.id, { password: hashedPassword });
 
       return {
         result: 'success',

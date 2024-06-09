@@ -8,6 +8,7 @@ import {
 import { RequestResponse } from 'src/core/interfaces/index.interface';
 import { User } from 'src/entities/user.entity';
 import { Repository } from 'typeorm';
+import { compare } from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -41,7 +42,9 @@ export class AuthService {
         };
       }
 
-      if (user.password !== userDto.password) {
+      const isPasswordValid = await compare(userDto.password, user.password);
+
+      if (!isPasswordValid) {
         return {
           result: 'error',
           message: 'Invalid password',
@@ -57,8 +60,10 @@ export class AuthService {
         };
       }
 
+      const jwtPayload = { email: user.email, id: user.id };
+
       // get token
-      const token = await this.jwtService.signAsync(userDto);
+      const token = await this.jwtService.signAsync(jwtPayload);
 
       // Update last login date
       await this.userRepository.update(user.id, {
@@ -110,7 +115,9 @@ export class AuthService {
         };
       }
 
-      if (user.password !== userDto.password) {
+      const isPasswordValid = await compare(userDto.password, user.password);
+
+      if (!isPasswordValid) {
         return {
           result: 'error',
           message: 'Invalid password',
@@ -126,8 +133,10 @@ export class AuthService {
         };
       }
 
+      const jwtPayload = { email: user.email, id: user.id };
+
       // get token
-      const token = await this.jwtService.signAsync(userDto);
+      const token = await this.jwtService.signAsync(jwtPayload);
 
       // Update last login date
       await this.userRepository.update(user.id, {
@@ -188,18 +197,16 @@ export class AuthService {
    */
   async logoutUser(token: string): Promise<RequestResponse> {
     try {
-      const { email, phone, role } = await this.jwtService.verifyAsync(
-        token.split(' ')[1],
-      );
+      const { id } = await this.jwtService.verifyAsync(token.split(' ')[1]);
 
       // get user
       const user = await this.userRepository.findOne({
-        where: { email, phone, role },
+        where: { id },
       });
       if (!user) {
         return {
           result: 'error',
-          message: 'User with the email address does not exist',
+          message: 'User does not exist',
           data: null,
         };
       }

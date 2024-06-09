@@ -5,6 +5,8 @@ import {
   UploadedFile,
   UseInterceptors,
   BadRequestException,
+  NotFoundException,
+  Get,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { extname } from 'path';
@@ -12,21 +14,29 @@ import {
   ChangeEmailDto,
   ChangePhoneNumberDto,
   ChangeAddressDto,
-  ChangeProfilePictureDto,
   UpdateCommunicationPreferencesDto,
+  ChangePasswordDto,
+  ChangeLanguageDto,
 } from 'src/core/dto/settings.dto';
 import { RequestResponse } from 'src/core/interfaces/index.interface';
 import { SettingsService } from 'src/settings/settings.service';
 import { diskStorage } from 'multer';
+import {
+  ExtractUser,
+  JwtUser,
+} from 'src/core/decorators/extract-user.decorator';
 
 @Controller('settings')
 export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}
 
   @Post('updateEmail')
-  changeEmail(@Body() payload: ChangeEmailDto): Promise<RequestResponse> {
+  changeEmail(
+    @ExtractUser() user: JwtUser,
+    @Body() payload: ChangeEmailDto,
+  ): Promise<RequestResponse> {
     return this.settingsService.changeEmail(
-      payload.userId,
+      user.id,
       payload.email,
       payload.newEmail,
     );
@@ -34,18 +44,22 @@ export class SettingsController {
 
   @Post('updatePhoneNumber')
   changePhoneNumber(
+    @ExtractUser() user: JwtUser,
     @Body() payload: ChangePhoneNumberDto,
   ): Promise<RequestResponse> {
     return this.settingsService.changePhoneNumber(
-      payload.userId,
+      user.id,
       payload.newPhoneNumber,
     );
   }
 
   @Post('updateAddress')
-  changeAddress(@Body() payload: ChangeAddressDto): Promise<RequestResponse> {
+  changeAddress(
+    @ExtractUser() user: JwtUser,
+    @Body() payload: ChangeAddressDto,
+  ): Promise<RequestResponse> {
     return this.settingsService.changeAddress(
-      payload.userId,
+      user.id,
       payload.addressStreet,
       payload.addressCity,
       payload.addressState,
@@ -74,19 +88,56 @@ export class SettingsController {
   )
   async changeProfilePicture(
     @UploadedFile() file: Express.Multer.File,
-    @Body() payload: ChangeProfilePictureDto,
+    @ExtractUser() user: JwtUser,
   ): Promise<RequestResponse> {
     if (!file) {
       throw new BadRequestException('File is required');
     }
-    return this.settingsService.changeProfilePicture(payload.userId, file);
+    return this.settingsService.changeProfilePicture(user.id, file);
   }
 
   @Post('updateCommunicationPreferences')
   async updateCommunicationPreferences(
+    @ExtractUser() user: JwtUser,
     @Body()
     dto: UpdateCommunicationPreferencesDto,
   ): Promise<RequestResponse> {
-    return this.settingsService.updateCommunicationPreferences(dto);
+    return this.settingsService.updateCommunicationPreferences(dto, user.id);
+  }
+
+  @Post('changePassword')
+  changePassword(
+    @ExtractUser() user: JwtUser,
+    @Body() changePasswordDto: ChangePasswordDto,
+  ): Promise<RequestResponse> {
+    return this.settingsService.changePassword(
+      user.id,
+      changePasswordDto.currentPassword,
+      changePasswordDto.newPassword,
+    );
+  }
+
+  @Get(':userId')
+  async getSettings(@ExtractUser() user: JwtUser) {
+    try {
+      return await this.settingsService.getSettings(user.id);
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
+  }
+
+  @Post('changeLanguage')
+  async changeLanguage(
+    @ExtractUser() user: JwtUser,
+    @Body() changeLanguageDto: ChangeLanguageDto,
+  ) {
+    try {
+      return await this.settingsService.updateLanguage(
+        user.id,
+        changeLanguageDto,
+      );
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
   }
 }

@@ -6,17 +6,19 @@ import {
   Validate,
   IsOptional,
   IsBoolean,
+  Matches,
+  MaxLength,
+  MinLength,
+  IsIn,
 } from 'class-validator';
 import { IsRussianPhoneNumberConstraint } from '../../common/classes/custom-validator.class';
+import { Match } from '../decorators/match.decorator';
+import { IsDifferent } from '../decorators/is-different.decorator';
 
 /**
  * Change email address
  */
 export class ChangeEmailDto {
-  @IsString()
-  @IsNotEmpty()
-  readonly userId: string;
-
   @IsEmail()
   @IsNotEmpty()
   readonly email: string;
@@ -30,10 +32,6 @@ export class ChangeEmailDto {
  * Change phone number
  */
 export class ChangePhoneNumberDto {
-  @IsString()
-  @IsNotEmpty()
-  readonly userId: string;
-
   @Validate(IsRussianPhoneNumberConstraint, {
     message: 'Phone number must be a valid Russian phone number!',
   })
@@ -45,10 +43,6 @@ export class ChangePhoneNumberDto {
  * Change address
  */
 export class ChangeAddressDto {
-  @IsString()
-  @IsNotEmpty()
-  readonly userId: string;
-
   @IsNotEmpty()
   @IsString()
   @Length(5, 100)
@@ -78,27 +72,50 @@ export class ChangeAddressDto {
 /**
  * Change Profile Picture
  */
-export class ChangeProfilePictureDto {
-  @IsNotEmpty()
-  @IsString()
-  readonly userId: string;
-}
+export class ChangeProfilePictureDto {}
 
 /** Update Communication preferences */
 export class UpdateCommunicationPreferencesDto {
+  @IsBoolean()
   @IsNotEmpty()
+  readonly notificationsEmail: boolean;
+
+  @IsBoolean()
+  @IsNotEmpty()
+  readonly notificationsSms: boolean;
+
+  @IsBoolean()
+  @IsNotEmpty()
+  readonly securityTwoFactorAuth: boolean;
+}
+
+export class ChangePasswordDto {
   @IsString()
-  userId: string;
+  @MinLength(8)
+  @MaxLength(20)
+  readonly currentPassword: string;
 
-  @IsBoolean()
+  @IsString()
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{8,}$/, {
+    message: 'Password too weak',
+  })
+  @IsDifferent('currentPassword', {
+    message: 'New password must be different from current password',
+  })
   @IsNotEmpty()
-  notificationsEmail: boolean;
+  @MinLength(4)
+  @MaxLength(20)
+  readonly newPassword: string;
 
-  @IsBoolean()
+  @Match('newPassword', { message: 'Passwords do not match' })
+  @MinLength(4)
+  @MaxLength(20)
+  @IsString()
   @IsNotEmpty()
-  notificationsSms: boolean;
+  readonly confirmNewPassword: string;
+}
 
-  @IsBoolean()
-  @IsNotEmpty()
-  securityTwoFactorAuth: boolean;
+export class ChangeLanguageDto {
+  @IsIn(['en', 'ru', 'fr'], { message: 'Invalid language selection' })
+  readonly language: string;
 }

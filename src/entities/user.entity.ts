@@ -11,8 +11,6 @@ import { Settings } from './settings.entity';
 
 @Entity()
 export class User {
-  private readonly baseUrl: string = process.env.BACKEND_URL;
-
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -39,7 +37,7 @@ export class User {
 
   get profilePictureUrl(): string | null {
     if (this.profilePicture) {
-      return `${this.baseUrl}/uploads/${this.profilePicture}`;
+      return `${process.env.BACKEND_URL}/uploads/${this.profilePicture}`;
     }
     return null;
   }
