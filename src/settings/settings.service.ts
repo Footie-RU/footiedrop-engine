@@ -9,7 +9,6 @@ import {
   UpdateCommunicationPreferencesDto,
 } from 'src/core/dto/settings.dto';
 import { compare, hash } from 'bcrypt';
-import { Settings } from 'src/entities/settings.entity';
 
 @Injectable()
 export class SettingsService {
@@ -308,30 +307,55 @@ export class SettingsService {
 
   //Others
 
-  async getSettings(userId: string): Promise<Settings> {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-    });
-    if (!user) {
-      throw new NotFoundException('User not found');
+  async getSettings(userId: string): Promise<RequestResponse> {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { id: userId },
+      });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      return {
+        result: 'success',
+        message: 'User settings fetched successfully',
+        data: user.settings,
+      };
+    } catch (error) {
+      return {
+        result: 'error',
+        message: error.message || "Failed to fetch user's settings",
+        data: null,
+      };
     }
-    return user.settings;
   }
 
   async updateLanguage(
     userId: string,
     changeLanguageDto: ChangeLanguageDto,
-  ): Promise<Settings> {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-    });
-    if (!user) {
-      throw new NotFoundException('User not found');
+  ): Promise<RequestResponse> {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { id: userId },
+      });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      user.settings.language = changeLanguageDto.language;
+      await this.userRepository.save(user);
+
+      return {
+        result: 'success',
+        message: 'Language changed successfully',
+        data: null,
+      };
+    } catch (error) {
+      return {
+        result: 'error',
+        message: error.message || 'Failed to change language',
+        data: null,
+      };
     }
-
-    user.settings.language = changeLanguageDto.language;
-    await this.userRepository.save(user);
-
-    return user.settings;
   }
 }
