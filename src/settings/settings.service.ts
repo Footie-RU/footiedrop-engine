@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/entities/user.entity';
 import { Repository } from 'typeorm';
@@ -29,7 +33,7 @@ export class SettingsService {
     id: string,
     email: string,
     newEmail: string,
-  ): Promise<RequestResponse> {
+  ): Promise<RequestResponse | BadRequestException> {
     try {
       const user = await this.userRepository.findOne({ where: { id, email } });
 
@@ -42,11 +46,7 @@ export class SettingsService {
       }
 
       if (user.email === newEmail) {
-        return {
-          result: 'error',
-          message: 'Emails are the same',
-          data: null,
-        };
+        return new BadRequestException('Emails are the same');
       }
 
       const userWithEmailExists = await this.userRepository.findOne({
@@ -54,18 +54,17 @@ export class SettingsService {
       });
 
       if (userWithEmailExists) {
-        return {
-          result: 'error',
-          message: 'User with email already exists',
-          data: null,
-        };
+        return new BadRequestException('User with email already exists');
       }
 
-      await this.userRepository.update(user.id, { email: newEmail });
+      await this.userRepository.update(user.id, {
+        email: newEmail,
+        settings: { verified: false },
+      });
 
       return {
         result: 'success',
-        message: 'Email updated successfully',
+        message: 'Email updated successfully!',
         data: null,
       };
     } catch (error) {
@@ -266,7 +265,7 @@ export class SettingsService {
     userId: string,
     currentPassword: string,
     newPassword: string,
-  ): Promise<RequestResponse> {
+  ): Promise<RequestResponse | BadRequestException> {
     try {
       const user = await this.userRepository.findOne({ where: { id: userId } });
 
@@ -281,15 +280,20 @@ export class SettingsService {
       const isPasswordValid = await compare(currentPassword, user.password);
 
       if (!isPasswordValid) {
-        return {
-          result: 'error',
-          message: 'Current password is incorrect',
-          data: null,
-        };
+        return new BadRequestException('Current password is incorrect');
       }
 
       const hashedPassword = await hash(newPassword, 10);
       await this.userRepository.update(user.id, { password: hashedPassword });
+
+      // Send welcome email to user
+      const message = `Hello ${user.firstName}, your password was successfully changed.`;
+      await this.mailerService.sendEmail(
+        'team',
+        user.email,
+        'Your password was changed',
+        message,
+      );
 
       return {
         result: 'success',

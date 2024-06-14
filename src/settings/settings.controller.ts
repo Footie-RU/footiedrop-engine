@@ -34,7 +34,7 @@ export class SettingsController {
   changeEmail(
     @ExtractUser() user: JwtUser,
     @Body() payload: ChangeEmailDto,
-  ): Promise<RequestResponse> {
+  ): Promise<RequestResponse | BadRequestException> {
     return this.settingsService.changeEmail(
       user.id,
       payload.email,
@@ -109,7 +109,7 @@ export class SettingsController {
   changePassword(
     @ExtractUser() user: JwtUser,
     @Body() changePasswordDto: ChangePasswordDto,
-  ): Promise<RequestResponse> {
+  ): Promise<RequestResponse | BadRequestException> {
     return this.settingsService.changePassword(
       user.id,
       changePasswordDto.currentPassword,
