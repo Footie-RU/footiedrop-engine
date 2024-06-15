@@ -59,6 +59,15 @@ export class User {
   addressState: string;
 
   @Column()
+  floor: string;
+
+  @Column()
+  zip_code: string;
+
+  @Column()
+  apartment_number: string;
+
+  @Column()
   addressPostalCode: string;
 
   @Column()

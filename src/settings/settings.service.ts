@@ -9,8 +9,10 @@ import { Repository } from 'typeorm';
 import { RequestResponse } from '../core/interfaces/index.interface';
 import { EmailService } from '../core/services/mailer.service';
 import {
+  ChangeAddressDto,
   ChangeLanguageDto,
   UpdateCommunicationPreferencesDto,
+  updateProfileDto,
 } from 'src/core/dto/settings.dto';
 import { compare, hash } from 'bcrypt';
 
@@ -127,30 +129,16 @@ export class SettingsService {
    */
   async changeAddress(
     userId: string,
-    addressStreet: string,
-    addressCity: string,
-    addressState: string,
-    addressPostalCode: string,
-    addressCountry: string,
-  ): Promise<RequestResponse> {
+    payload: ChangeAddressDto,
+  ): Promise<RequestResponse | BadRequestException> {
     try {
       const user = await this.userRepository.findOne({ where: { id: userId } });
 
       if (!user) {
-        return {
-          result: 'error',
-          message: 'User not found',
-          data: null,
-        };
+        return new BadRequestException('User not found');
       }
 
-      await this.userRepository.update(user.id, {
-        addressStreet,
-        addressCity,
-        addressState,
-        addressPostalCode,
-        addressCountry,
-      });
+      await this.userRepository.update(user.id, { ...payload });
 
       return {
         result: 'success',
@@ -172,9 +160,10 @@ export class SettingsService {
    * @param {string} profilePicture
    * @returns {Promise<RequestResponse>}
    */
-  async changeProfilePicture(
+  async updateProfile(
     userId: string,
     profilePicture: Express.Multer.File,
+    payload: updateProfileDto,
   ): Promise<RequestResponse> {
     try {
       const user = await this.userRepository.findOne({
@@ -189,18 +178,22 @@ export class SettingsService {
         };
       }
 
-      user.profilePicture = profilePicture.filename;
-      await this.userRepository.save(user);
+      await this.userRepository.update(user.id, {
+        profilePicture: profilePicture.filename,
+        firstName: payload.firstName,
+        middleName: payload.middlename,
+        lastName: payload.lastName,
+      });
 
       return {
         result: 'success',
-        message: 'Profile picture updated successfully',
+        message: 'Profile updated successfully',
         data: null,
       };
     } catch (error) {
       return {
         result: 'error',
-        message: error.message || 'Failed to update profile picture',
+        message: error.message || 'Failed to update profile',
         data: null,
       };
     }
@@ -236,7 +229,7 @@ export class SettingsService {
       user.settings.notificationsSms = dto.notificationsSms;
       user.settings.securityTwoFactorAuth = dto.securityTwoFactorAuth;
 
-      await this.userRepository.save(user);
+      await this.userRepository.update(user.id, user);
 
       return {
         result: 'success',
@@ -347,7 +340,7 @@ export class SettingsService {
       }
 
       user.settings.language = changeLanguageDto.language;
-      await this.userRepository.save(user);
+      await this.userRepository.update(user.id, user);
 
       return {
         result: 'success',

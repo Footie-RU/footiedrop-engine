@@ -10,10 +10,12 @@ import {
   MaxLength,
   MinLength,
   IsIn,
+  IsEnum,
 } from 'class-validator';
 import { IsRussianPhoneNumberConstraint } from '../../common/classes/custom-validator.class';
 import { Match } from '../decorators/match.decorator';
 import { IsDifferent } from '../decorators/is-different.decorator';
+import { UserRole } from '../interfaces/user.interface';
 
 /**
  * Change email address
@@ -53,10 +55,25 @@ export class ChangeAddressDto {
   @Length(2, 50)
   readonly addressCity: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   @Length(2, 50)
   readonly addressState: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(2, 50)
+  readonly floor: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(2, 50)
+  readonly apartment_number: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(2, 50)
+  readonly zip_code: string;
 
   @IsOptional()
   @IsString()
@@ -73,6 +90,24 @@ export class ChangeAddressDto {
  * Change Profile Picture
  */
 export class ChangeProfilePictureDto {}
+
+export class updateProfileDto {
+  @IsString()
+  @IsNotEmpty()
+  readonly firstName: string;
+
+  @IsOptional()
+  @IsString()
+  readonly middlename: string;
+
+  @IsString()
+  @IsNotEmpty()
+  readonly lastName: string;
+
+  @IsEnum(UserRole)
+  @IsNotEmpty()
+  readonly role: UserRole;
+}
 
 /** Update Communication preferences */
 export class UpdateCommunicationPreferencesDto {
