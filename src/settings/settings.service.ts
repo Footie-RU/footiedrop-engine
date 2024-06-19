@@ -64,6 +64,15 @@ export class SettingsService {
         settings: { verified: false },
       });
 
+      // Send welcome email to user
+      const message = `Hello ${user.firstName}, your email address was successfully changed.`;
+      await this.mailerService.sendEmail(
+        'team',
+        user.email,
+        'Your email address was changed',
+        message,
+      );
+
       return {
         result: 'success',
         message: 'Email updated successfully!',
@@ -102,6 +111,15 @@ export class SettingsService {
       await this.userRepository.update(user.id, {
         phone: newPhoneNumber,
       });
+
+      // Send welcome email to user
+      const message = `Hello ${user.firstName}, your phone number was successfully changed.`;
+      await this.mailerService.sendEmail(
+        'team',
+        user.email,
+        'Your phone number was changed',
+        message,
+      );
 
       return {
         result: 'success',
