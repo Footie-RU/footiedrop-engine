@@ -73,7 +73,7 @@ export class SettingsController {
         },
       }),
       fileFilter: (req, file, cb) => {
-        if (!file.mimetype.match(/\/(jpg|jpeg|png)$/)) {
+        if (file && !file.mimetype.match(/\/(jpg|jpeg|png)$/)) {
           cb(new BadRequestException('Only image files are allowed!'), false);
         } else {
           cb(null, true);
@@ -81,14 +81,11 @@ export class SettingsController {
       },
     }),
   )
-  async changeProfilePicture(
+  async updateProfile(
     @UploadedFile() file: Express.Multer.File,
     @ExtractUser() user: JwtUser,
     @Body() payload: updateProfileDto,
   ): Promise<RequestResponse> {
-    if (!file) {
-      throw new BadRequestException('File is required');
-    }
     return this.settingsService.updateProfile(user.id, file, payload);
   }
 

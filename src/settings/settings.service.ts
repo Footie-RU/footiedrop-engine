@@ -66,12 +66,13 @@ export class SettingsService {
 
       // Send welcome email to user
       const message = `Hello ${user.firstName}, your email address was successfully changed.`;
-      await this.mailerService.sendEmail(
-        'team',
-        user.email,
-        'Your email address was changed',
-        message,
-      );
+      if (user.settings.notificationsEmail)
+        await this.mailerService.sendEmail(
+          'team',
+          user.email,
+          'Your email address was changed',
+          message,
+        );
 
       return {
         result: 'success',
@@ -114,12 +115,13 @@ export class SettingsService {
 
       // Send welcome email to user
       const message = `Hello ${user.firstName}, your phone number was successfully changed.`;
-      await this.mailerService.sendEmail(
-        'team',
-        user.email,
-        'Your phone number was changed',
-        message,
-      );
+      if (user.settings.notificationsEmail)
+        await this.mailerService.sendEmail(
+          'team',
+          user.email,
+          'Your phone number was changed',
+          message,
+        );
 
       return {
         result: 'success',
@@ -196,12 +198,19 @@ export class SettingsService {
         };
       }
 
-      await this.userRepository.update(user.id, {
-        profilePicture: profilePicture.filename,
+      // Build update data
+      const updateData: Partial<User> = {
         firstName: payload.firstName,
-        middleName: payload.middlename,
+        middleName: payload.middlename || '',
         lastName: payload.lastName,
-      });
+      };
+
+      // Only update profile picture if a file is uploaded
+      if (profilePicture) {
+        updateData.profilePicture = profilePicture.filename;
+      }
+
+      await this.userRepository.update(user.id, updateData);
 
       return {
         result: 'success',
@@ -299,12 +308,13 @@ export class SettingsService {
 
       // Send welcome email to user
       const message = `Hello ${user.firstName}, your password was successfully changed.`;
-      await this.mailerService.sendEmail(
-        'team',
-        user.email,
-        'Your password was changed',
-        message,
-      );
+      if (user.settings.notificationsEmail)
+        await this.mailerService.sendEmail(
+          'team',
+          user.email,
+          'Your password was changed',
+          message,
+        );
 
       return {
         result: 'success',
