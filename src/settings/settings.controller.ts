@@ -17,6 +17,7 @@ import {
   UpdateCommunicationPreferencesDto,
   ChangePasswordDto,
   ChangeLanguageDto,
+  updateProfileDto,
 } from 'src/core/dto/settings.dto';
 import { RequestResponse } from 'src/core/interfaces/index.interface';
 import { SettingsService } from 'src/settings/settings.service';
@@ -34,7 +35,7 @@ export class SettingsController {
   changeEmail(
     @ExtractUser() user: JwtUser,
     @Body() payload: ChangeEmailDto,
-  ): Promise<RequestResponse> {
+  ): Promise<RequestResponse | BadRequestException> {
     return this.settingsService.changeEmail(
       user.id,
       payload.email,
@@ -57,28 +58,22 @@ export class SettingsController {
   changeAddress(
     @ExtractUser() user: JwtUser,
     @Body() payload: ChangeAddressDto,
-  ): Promise<RequestResponse> {
-    return this.settingsService.changeAddress(
-      user.id,
-      payload.addressStreet,
-      payload.addressCity,
-      payload.addressState,
-      payload.addressPostalCode,
-      payload.addressCountry,
-    );
+  ): Promise<RequestResponse | BadRequestException> {
+    return this.settingsService.changeAddress(user.id, payload);
   }
 
-  @Post('updateProfilePicture')
+  @Post('updateProfile/:userId')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
         destination: './uploads',
         filename: (req, file, cb) => {
-          cb(null, `${req.body.userId}${extname(file.originalname)}`);
+          const userId = req.params.userId;
+          cb(null, `${userId}${extname(file.originalname)}`);
         },
       }),
       fileFilter: (req, file, cb) => {
-        if (!file.mimetype.match(/\/(jpg|jpeg|png)$/)) {
+        if (file && !file.mimetype.match(/\/(jpg|jpeg|png)$/)) {
           cb(new BadRequestException('Only image files are allowed!'), false);
         } else {
           cb(null, true);
@@ -86,14 +81,12 @@ export class SettingsController {
       },
     }),
   )
-  async changeProfilePicture(
+  async updateProfile(
     @UploadedFile() file: Express.Multer.File,
     @ExtractUser() user: JwtUser,
+    @Body() payload: updateProfileDto,
   ): Promise<RequestResponse> {
-    if (!file) {
-      throw new BadRequestException('File is required');
-    }
-    return this.settingsService.changeProfilePicture(user.id, file);
+    return this.settingsService.updateProfile(user.id, file, payload);
   }
 
   @Post('updateCommunicationPreferences')
@@ -109,7 +102,7 @@ export class SettingsController {
   changePassword(
     @ExtractUser() user: JwtUser,
     @Body() changePasswordDto: ChangePasswordDto,
-  ): Promise<RequestResponse> {
+  ): Promise<RequestResponse | BadRequestException> {
     return this.settingsService.changePassword(
       user.id,
       changePasswordDto.currentPassword,

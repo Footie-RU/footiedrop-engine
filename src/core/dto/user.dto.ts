@@ -8,6 +8,7 @@ import {
   MinLength,
   IsEnum,
   Validate,
+  IsOptional,
 } from 'class-validator';
 import { Match } from '../decorators/match.decorator';
 import { UserRole } from '../interfaces/user.interface';
@@ -25,8 +26,9 @@ export class CreateUserDto {
   @IsNotEmpty()
   readonly firstName: string;
 
-  // @IsString()
-  // readonly middlename: string;
+  @IsOptional()
+  @IsString()
+  readonly middlename: string;
 
   @IsString()
   @IsNotEmpty()
@@ -156,7 +158,7 @@ export class UpdatePasswordDto {
   @IsNotEmpty()
   readonly token: string;
 
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/, {
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{8,}$/, {
     message: 'Password too weak',
   })
   @IsNotEmpty()
