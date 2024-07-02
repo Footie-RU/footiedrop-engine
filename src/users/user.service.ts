@@ -7,7 +7,7 @@ import { CreateUserDto, SendPasswordResetEmailDto } from '../core/dto/user.dto';
 import { EmailService } from '../core/services/mailer.service';
 import { VerificationOtp } from 'src/entities/verify.entity';
 import { JwtService } from '@nestjs/jwt';
-import { hash } from 'bcrypt';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserService {
@@ -132,7 +132,7 @@ export class UserService {
         };
       }
 
-      const hashedPassword = await hash(createUserDto.password, 10);
+      const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
       const user = await this.userRepository.save({
         ...rest,
@@ -496,7 +496,7 @@ export class UserService {
         };
       }
 
-      const hashedPassword = await hash(password, 10);
+      const hashedPassword = await bcrypt.hash(password, 10);
 
       await this.userRepository.update(user.id, { password: hashedPassword });
 

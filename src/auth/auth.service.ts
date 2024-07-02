@@ -8,7 +8,7 @@ import {
 import { RequestResponse } from 'src/core/interfaces/index.interface';
 import { User } from 'src/entities/user.entity';
 import { Repository } from 'typeorm';
-import { compare } from 'bcrypt';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -42,7 +42,10 @@ export class AuthService {
         };
       }
 
-      const isPasswordValid = await compare(userDto.password, user.password);
+      const isPasswordValid = await bcrypt.compare(
+        userDto.password,
+        user.password,
+      );
 
       if (!isPasswordValid) {
         return {
@@ -115,7 +118,10 @@ export class AuthService {
         };
       }
 
-      const isPasswordValid = await compare(userDto.password, user.password);
+      const isPasswordValid = await bcrypt.compare(
+        userDto.password,
+        user.password,
+      );
 
       if (!isPasswordValid) {
         return {
