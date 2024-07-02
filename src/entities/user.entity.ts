@@ -37,7 +37,7 @@ export class User {
 
   get profilePictureUrl(): string | null {
     if (this.profilePicture) {
-      return `${process.env.BACKEND_URL}/uploads/${this.profilePicture}`;
+      return `${process.env.BACKEND_URL ? process.env.BACKEND_URL : 'https://footiedrop.adaptable.app'}/uploads/${this.profilePicture}`;
     }
     return null;
   }
