@@ -1,20 +1,17 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/entities/user.entity';
 import { Repository } from 'typeorm';
 import { RequestResponse } from '../core/interfaces/index.interface';
-import { CreateUserDto, SendPasswordResetEmailDto } from '../core/dto/user.dto';
+import { SendPasswordResetEmailDto } from '../core/dto/user.dto';
 import { EmailService } from '../core/services/mailer.service';
 import { VerificationOtp } from 'src/entities/verify.entity';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { CreateAdminDto } from 'src/core/dto/admin.dto';
 
 @Injectable()
-export class UserService {
+export class AdminService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
@@ -98,7 +95,7 @@ export class UserService {
    * @param createUserDto
    * @returns {Promise<RequestResponse>}
    */
-  async create(createUserDto: CreateUserDto): Promise<RequestResponse> {
+  async create(createUserDto: CreateAdminDto): Promise<RequestResponse> {
     try {
       // check if user with email already exists
       const userWithEmailExists = await this.userRepository.findOne({
@@ -106,7 +103,11 @@ export class UserService {
       });
 
       if (userWithEmailExists) {
-        throw new ConflictException('User with email already exists');
+        return {
+          result: 'error',
+          message: 'User with email already exists',
+          data: null,
+        };
       }
 
       // check if user with phone number already exists
@@ -115,13 +116,21 @@ export class UserService {
       });
 
       if (userWithPhoneExists) {
-        throw new ConflictException('User with phone number already exists');
+        return {
+          result: 'error',
+          message: 'User with phone number already exists',
+          data: null,
+        };
       }
 
       const { confirmPassword, ...rest } = createUserDto;
 
       if (createUserDto.password !== confirmPassword) {
-        throw new BadRequestException('Passwords do not match');
+        return {
+          result: 'error',
+          message: 'Passwords do not match',
+          data: null,
+        };
       }
 
       const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
@@ -145,7 +154,7 @@ export class UserService {
 
       if (otpResponse.result === 'error') {
         // Handle error generating OTP
-        throw new BadRequestException(otpResponse.message);
+        return otpResponse;
       }
 
       return {
@@ -154,7 +163,11 @@ export class UserService {
         data: user,
       };
     } catch (error) {
-      throw new BadRequestException(error.message || 'Failed to create user');
+      return {
+        result: 'error',
+        message: error.message || 'Failed to create user',
+        data: null,
+      };
     }
   }
 

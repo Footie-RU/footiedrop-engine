@@ -1,3 +1,5 @@
+import { KYCStep } from 'src/entities/kyc.entity';
+
 interface User {
   id: string;
   name: string;
@@ -50,4 +52,23 @@ interface UserAccount {
 export enum UserRole {
   CUSTOMER = 'customer',
   COURIER = 'courier',
+}
+
+export enum AdminRoles {
+  ADMIN = 'admin',
+}
+
+export interface UserKYC {
+  id: string;
+  userId: string;
+  internationalPassport: any; // Image file
+  russianPassport?: any; // Image file
+  schoolID: any; // Image file
+  selfie: any; // Image file
+  createdAt: string;
+  updatedAt: string;
+  status: 'pending' | 'approved' | 'rejected';
+  rejectionReason?: string; // Optional, needed only if rejected
+  user: User;
+  step: KYCStep;
 }

@@ -15,6 +15,9 @@ export class Payment {
   @Column()
   status: 'pending' | 'completed' | 'failed' | 'refunded' | 'cancelled';
 
+  @Column()
+  orderId: string;
+
   @ManyToOne(() => User, (user) => user.payments)
   user: User;
 }

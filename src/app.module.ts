@@ -11,8 +11,32 @@ import { VerificationOtp } from './entities/verify.entity';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { SettingsModule } from './settings/settings.module';
+import { OrdersModule } from './orders/orders.module';
+import { Message } from './entities/message.entity';
+import { MessageModule } from './messages/message.module';
+import { AdminModule } from './admin/admin.module';
+import { KYCModule } from './kyc/kyc.module';
+import { UserKYC } from './entities/kyc.entity';
 
-const Modules = [AuthModule, UserModule, SettingsModule];
+const Modules = [
+  AuthModule,
+  UserModule,
+  SettingsModule,
+  OrdersModule,
+  MessageModule,
+  AdminModule,
+  KYCModule,
+];
+
+const Entities = [
+  User,
+  Order,
+  Payment,
+  Settings,
+  VerificationOtp,
+  Message,
+  UserKYC,
+];
 
 @Module({
   imports: [
@@ -24,8 +48,8 @@ const Modules = [AuthModule, UserModule, SettingsModule];
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_DATABASE,
-      entities: [User, Order, Payment, Settings, VerificationOtp],
-      // synchronize: true,
+      entities: [...Entities],
+      synchronize: true,
     }),
     ...Modules,
   ],

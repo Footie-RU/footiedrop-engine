@@ -8,6 +8,7 @@ import {
   Request,
 } from '@nestjs/common';
 import {
+  LoginAdminWithEmailDto,
   LoginUserWithEmailDto,
   LoginUserWithPhoneDto,
 } from 'src/core/dto/user.dto';
@@ -18,6 +19,15 @@ import { SkipAuth } from 'src/core/decorators/meta.decorator';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @SkipAuth()
+  @HttpCode(HttpStatus.OK)
+  @Post('admin/loginWithEmail')
+  loginAdminWithEmail(
+    @Body() payload: LoginAdminWithEmailDto,
+  ): Promise<RequestResponse> {
+    return this.authService.validateUserViaEmail(payload);
+  }
 
   @SkipAuth()
   @HttpCode(HttpStatus.OK)

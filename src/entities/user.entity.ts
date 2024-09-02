@@ -4,10 +4,13 @@ import {
   Column,
   OneToMany,
   AfterLoad,
+  JoinColumn,
+  OneToOne,
 } from 'typeorm';
 import { Order } from './order.entity';
 import { Payment } from './payment.entity';
 import { Settings } from './settings.entity';
+import { UserKYC } from './kyc.entity';
 
 @Entity()
 export class User {
@@ -17,7 +20,7 @@ export class User {
   @Column()
   firstName: string;
 
-  @Column()
+  @Column({ type: 'text', default: null, nullable: true })
   middleName: string;
 
   @Column()
@@ -49,32 +52,32 @@ export class User {
     }
   }
 
-  @Column()
+  @Column({ type: 'text', default: null, nullable: true })
   addressStreet: string;
 
-  @Column()
+  @Column({ type: 'text', default: null, nullable: true })
   addressCity: string;
 
-  @Column()
+  @Column({ type: 'text', default: null, nullable: true })
   addressState: string;
 
-  @Column()
+  @Column({ type: 'text', default: null, nullable: true })
   floor: string;
 
-  @Column()
+  @Column({ type: 'text', default: null, nullable: true })
   zip_code: string;
 
-  @Column()
+  @Column({ type: 'text', default: null, nullable: true })
   apartment_number: string;
 
-  @Column()
+  @Column({ type: 'text', default: null, nullable: true })
   addressPostalCode: string;
 
-  @Column()
+  @Column({ type: 'text', default: null, nullable: true })
   addressCountry: string;
 
   @Column({ default: 'customer' }) // Assuming 'customer' is the default role
-  role: 'customer' | 'courier';
+  role: 'customer' | 'courier' | 'admin';
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
@@ -99,9 +102,18 @@ export class User {
   settings: Settings;
 
   // column for bearer token
-  @Column({ nullable: true })
+  @Column({ type: 'text', default: null, nullable: true })
   token: string;
 
   @Column({ nullable: true })
   resetPasswordToken: string;
+
+  // KYC relationship
+  @OneToOne(() => UserKYC, (kyc) => kyc.user, {
+    cascade: true,
+    eager: true,
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn()
+  kyc: UserKYC;
 }

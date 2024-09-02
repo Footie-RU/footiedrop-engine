@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
+  LoginAdminWithEmailDto,
   LoginUserWithEmailDto,
   LoginUserWithPhoneDto,
 } from 'src/core/dto/user.dto';
@@ -27,7 +28,7 @@ export class AuthService {
    * @todo Implement this method
    */
   async validateUserViaEmail(
-    userDto: LoginUserWithEmailDto,
+    userDto: LoginUserWithEmailDto | LoginAdminWithEmailDto,
   ): Promise<RequestResponse> {
     try {
       const user = await this.userRepository.findOne({
@@ -63,7 +64,7 @@ export class AuthService {
         };
       }
 
-      const jwtPayload = { email: user.email, id: user.id };
+      const jwtPayload = { email: user.email, id: user.id, role: user.role };
 
       // get token
       const token = await this.jwtService.signAsync(jwtPayload);
@@ -86,6 +87,7 @@ export class AuthService {
         },
       };
     } catch (error) {
+      console.log(error);
       return {
         result: 'error',
         message: error.message || 'Failed to login user',
@@ -139,7 +141,7 @@ export class AuthService {
         };
       }
 
-      const jwtPayload = { email: user.email, id: user.id };
+      const jwtPayload = { email: user.email, id: user.id, role: user.role };
 
       // get token
       const token = await this.jwtService.signAsync(jwtPayload);

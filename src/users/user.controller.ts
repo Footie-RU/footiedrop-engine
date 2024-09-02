@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Param,
-  Post,
-  Body,
-  HttpCode,
-  HttpStatus,
-} from '@nestjs/common';
+import { Controller, Get, Param, Post, Body, UseGuards } from '@nestjs/common';
 import { SkipAuth } from 'src/core/decorators/meta.decorator';
 import {
   ChangeEmailDto,
@@ -16,6 +8,7 @@ import {
   UpdatePasswordDto,
   VerifyOtpDto,
 } from 'src/core/dto/user.dto';
+import { UserOwnershipGuard } from 'src/core/guards/roles.guard';
 import { RequestResponse } from 'src/core/interfaces/index.interface';
 import { UserService } from 'src/users/user.service';
 
@@ -23,24 +16,20 @@ import { UserService } from 'src/users/user.service';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Get()
-  findAll(): Promise<RequestResponse> {
-    return this.userService.findAll();
-  }
-
   @Get('id/:id')
+  @UseGuards(UserOwnershipGuard)
   findOneById(@Param('id') id: string): Promise<RequestResponse> {
     return this.userService.findOneById(id);
   }
 
   @Get('email/:email')
+  @UseGuards(UserOwnershipGuard)
   findOneByEmail(@Param('email') email: string): Promise<RequestResponse> {
     return this.userService.findOneByEmail(email);
   }
 
   @SkipAuth()
   @Post('create')
-  @HttpCode(HttpStatus.CREATED)
   create(@Body() createUserDto: CreateUserDto): Promise<RequestResponse> {
     return this.userService.create(createUserDto);
   }
@@ -65,6 +54,18 @@ export class UserController {
     @Param('email') email: string,
   ): Promise<RequestResponse> {
     return this.userService.findOneByEmail(email);
+  }
+
+  @SkipAuth()
+  @Get('kyc/user/:email')
+  kycUserByEmail(@Param('email') email: string): Promise<RequestResponse> {
+    return this.userService.findOneByEmail(email);
+  }
+
+  @SkipAuth()
+  @Get('kyc/user/id/:id')
+  kycUserByID(@Param('id') id: string): Promise<RequestResponse> {
+    return this.userService.findOneById(id);
   }
 
   @SkipAuth()

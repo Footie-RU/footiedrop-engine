@@ -120,6 +120,27 @@ export class LoginUserWithEmailDto {
 }
 
 /**
+ * Data transfer object for logging in a admin user with email and password
+ * @export LoginAdminWithEmailDto
+ * @class LoginAdminWithEmailDto
+ * @implements {LoginAdminWithEmailDto}
+ */
+export class LoginAdminWithEmailDto {
+  @IsEmail()
+  @IsNotEmpty()
+  readonly email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  readonly password: string;
+
+  // @IsEnum(UserRole)
+  @IsString()
+  @IsNotEmpty()
+  readonly role: string = 'admin';
+}
+
+/**
  * Data transfer object for logging in a user with phone and password
  * @export LoginUserWithPhoneDto
  * @class LoginUserWithPhoneDto
