@@ -12,6 +12,7 @@ export enum KYCStep {
   START = 'start',
   SUBMIT_SELFIE = 'submit_selfie',
   SUBMIT_INTERNATIONAL_PASSPORT = 'submit_international_passport',
+  SUBMIT_SCHOOL_ID = 'submit_school_id',
   SUBMIT_RUSSIAN_PASSPORT = 'submit_russian_passport',
   REVIEW = 'review',
   COMPLETE = 'complete',
@@ -25,16 +26,16 @@ export class UserKYC {
   @ManyToOne(() => User, (user) => user.kyc)
   user: User;
 
-  @Column({ type: 'text', default: null, nullable: true })
+  @Column({ type: 'mediumtext', default: null, nullable: true })
   internationalPassport: string; // Store the URL or file path of the image
 
-  @Column({ type: 'text', default: null, nullable: true })
+  @Column({ type: 'mediumtext', default: null, nullable: true })
   russianPassport: string;
 
-  @Column({ type: 'text', default: null, nullable: true })
+  @Column({ type: 'mediumtext', default: null, nullable: true })
   schoolID: string;
 
-  @Column({ type: 'text', default: null, nullable: true })
+  @Column({ type: 'mediumtext', default: null, nullable: true })
   selfie: string;
 
   @CreateDateColumn()
@@ -59,4 +60,16 @@ export class UserKYC {
     default: KYCStep.START,
   })
   step: KYCStep;
+
+  // documents-in-review email sent
+  @Column({ type: 'boolean', default: false })
+  documentsInReviewEmailSent: boolean;
+
+  // documents-verified email sent
+  @Column({ type: 'boolean', default: false })
+  documentsVerifiedEmailSent: boolean;
+
+  // documents-rejected email sent
+  @Column({ type: 'boolean', default: false })
+  documentsRejectedEmailSent: boolean;
 }
