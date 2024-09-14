@@ -4,16 +4,14 @@ import {
   Body,
   Param,
   Patch,
-  BadRequestException,
+  Get,
   UploadedFile,
   UseInterceptors,
-  Get,
 } from '@nestjs/common';
 import { KYCService } from './kyc.service';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
 import { SkipAuth } from 'src/core/decorators/meta.decorator';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 
 @Controller('kyc')
 export class KYCController {
@@ -34,35 +32,23 @@ export class KYCController {
     return this.kycService.updateKYCStatus(id, status, rejectionReason);
   }
 
-  @Post('uploadSelfie/:userId')
+  @Post('uploadDocument/:userId/:file')
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: diskStorage({
-        destination: './kycs/selfies',
-        filename: (req, file, cb) => {
-          const userId = req.params.userId;
-          const fileExt = extname(file.originalname);
-          const fileName = `${userId}_selfie${fileExt}`;
-          cb(null, fileName);
-        },
-      }),
-      fileFilter: (req, file, cb) => {
-        if (file && !file.mimetype.match(/\/(jpg|jpeg|png)$/)) {
-          cb(new BadRequestException('Only image files are allowed!'), false);
-        } else {
-          cb(null, true);
-        }
-      },
+      storage: memoryStorage(), // Use memoryStorage to get file buffer
     }),
   )
-  async uploadSelfie(
+  async uploadKYCDocuments(
     @Param('userId') userId: string,
+    @Param('file') fileType: 'internationalPassport' | 'schoolID' | 'selfie',
     @UploadedFile() file: Express.Multer.File,
   ) {
-    // Handle saving of KYC details (selfie) and store in the database
-    return {
-      message: 'Selfie uploaded successfully',
-      fileName: file.filename,
-    };
+    return this.kycService.uploadDocument(userId, file, fileType);
+  }
+
+  // verify kyc documents
+  @Patch('verifyDocuments/:userId')
+  async verifyKYCDocuments(@Param('userId') userId: string) {
+    return this.kycService.verifyKYCDocuments(userId);
   }
 }

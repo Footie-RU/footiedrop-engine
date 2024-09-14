@@ -31,5 +31,6 @@ export class EmailService {
     // Send email
     const info = await transporter.sendMail(mailOptions);
     console.log('Message sent: %s', info.messageId);
+    return info;
   }
 }
