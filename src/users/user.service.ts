@@ -358,12 +358,25 @@ export class UserService {
       // save the token to the user
       await this.userRepository.update(user.id, { resetPasswordToken: token });
 
-      // send reset password link back to the user
-      // set the link based on the environment variable
-      const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
+      // Determine whether the app is running in development or production
+      const baseUrl =
+        process.env.NODE_ENV === 'development'
+          ? 'http://localhost:3000' // Local development URL
+          : process.env.FRONTEND_URL; // Production URL from environment variable
 
-      // send email to user
-      const message = `Click the link below to reset your password: ${resetLink}`;
+      // Generate the reset password link with the token
+      const resetLink = `${baseUrl}/reset-password/${token}`;
+
+      // Create the email content with an anchor tag for the link
+      const message = `
+        Hi ${user.firstName}, 
+        <br/><br/>
+        You requested to reset your password. Please click the link below to reset your password:
+        <br/><br/>
+        <a href="${resetLink}" target="_blank" rel="noopener noreferrer">Reset your password</a>
+        <br/><br/>
+        If you did not request this change, please ignore this email.
+      `;
 
       await this.mailerService.sendEmail(
         'team',
@@ -487,6 +500,21 @@ export class UserService {
       const hashedPassword = await bcrypt.hash(password, 10);
 
       await this.userRepository.update(user.id, { password: hashedPassword });
+
+      const message = `
+        Dear ${user.firstName},
+        <br/><br/>
+        Your password has been updated successfully.
+        <br/><br/>
+        If you did not request this change, please contact us immediately.
+      `;
+
+      await this.mailerService.sendEmail(
+        'team',
+        user.email,
+        'Password Updated',
+        message,
+      );
 
       return {
         result: 'success',

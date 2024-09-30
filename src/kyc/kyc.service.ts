@@ -305,4 +305,41 @@ export class KYCService {
       );
     }
   }
+
+  /**
+   * Get all KYC records
+   * @returns RequestResponse
+   * @todo Implement this method
+   * @todo Add the correct return type
+   */
+  async getAllKYCRecords(): Promise<RequestResponse> {
+    try {
+      // Fetch all KYC records including the user details
+      const kycRecords = await this.kycRepository.find({
+        relations: ['user'],
+      });
+
+      // Exclude kyc from user entity to avoid circular reference
+      kycRecords.forEach((kyc) => {
+        delete kyc.user.kyc;
+      });
+
+      // Return the list of KYC records
+      return {
+        result: 'success',
+        message: 'List of all KYC records',
+        data: kycRecords,
+        statusCode: 200,
+      };
+    } catch (error) {
+      console.error('Error fetching KYC records:', error);
+      return {
+        result: 'error',
+        message: 'An error occurred while fetching KYC records',
+        data: null,
+        statusCode: 500,
+        error: error.message,
+      };
+    }
+  }
 }

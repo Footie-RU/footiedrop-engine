@@ -21,7 +21,6 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @SkipAuth()
-  @HttpCode(HttpStatus.OK)
   @Post('admin/loginWithEmail')
   loginAdminWithEmail(
     @Body() payload: LoginAdminWithEmailDto,

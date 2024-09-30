@@ -51,4 +51,10 @@ export class KYCController {
   async verifyKYCDocuments(@Param('userId') userId: string) {
     return this.kycService.verifyKYCDocuments(userId);
   }
+
+  // Return list of all KYC records
+  @Get('list')
+  async getKYCList() {
+    return this.kycService.getAllKYCRecords();
+  }
 }
