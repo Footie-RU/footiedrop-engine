@@ -1,4 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
@@ -31,68 +36,60 @@ export class AuthService {
     userDto: LoginUserWithEmailDto | LoginAdminWithEmailDto,
   ): Promise<RequestResponse> {
     try {
+      // Step 1: Fetch User
       const user = await this.userRepository.findOne({
         where: { email: userDto.email },
       });
 
       if (!user) {
-        return {
-          result: 'error',
-          message: 'Invalid email address',
-          data: null,
-        };
+        // Throw NestJS NotFoundException if the user is not found
+        throw new NotFoundException('Invalid email address');
       }
 
+      // Step 2: Password Validation
       const isPasswordValid = await bcrypt.compare(
         userDto.password,
         user.password,
       );
 
       if (!isPasswordValid) {
-        return {
-          result: 'error',
-          message: 'Invalid password',
-          data: null,
-        };
+        // Throw NestJS UnauthorizedException if the password is invalid
+        throw new UnauthorizedException('Invalid password');
       }
 
+      // Step 3: Role Authorization
       if (user.role !== userDto.role) {
-        return {
+        // Throw NestJS ForbiddenException if the user has an unauthorized role
+        throw new ForbiddenException({
           result: 'error',
           message: 'User is not authorized to login as a ' + userDto.role,
           data: null,
-        };
+        });
       }
 
+      // Step 4: Generate JWT token
       const jwtPayload = { email: user.email, id: user.id, role: user.role };
-
-      // get token
       const token = await this.jwtService.signAsync(jwtPayload);
 
-      // Update last login date
+      // Step 5: Update last login date and token
       await this.userRepository.update(user.id, {
         lastLogin: new Date(),
         token: token,
       });
 
-      console.log('User logged in successfully', user);
+      // Step 6: Successful Login
       return {
         result: 'success',
         message: 'User logged in successfully',
         data: {
-          token: token,
+          token,
           userId: user.id,
           email: user.email,
           role: user.role,
         },
       };
     } catch (error) {
-      console.log(error);
-      return {
-        result: 'error',
-        message: error.message || 'Failed to login user',
-        data: null,
-      };
+      throw error;
     }
   }
 
@@ -113,11 +110,11 @@ export class AuthService {
       });
 
       if (!user) {
-        return {
+        throw new NotFoundException({
           result: 'error',
           message: 'Invalid phone number',
           data: null,
-        };
+        });
       }
 
       const isPasswordValid = await bcrypt.compare(
@@ -126,19 +123,19 @@ export class AuthService {
       );
 
       if (!isPasswordValid) {
-        return {
+        throw new UnauthorizedException({
           result: 'error',
           message: 'Invalid password',
           data: null,
-        };
+        });
       }
 
       if (user.role !== userDto.role) {
-        return {
+        throw new ForbiddenException({
           result: 'error',
           message: 'User is not authorized to login as a ' + userDto.role,
           data: null,
-        };
+        });
       }
 
       const jwtPayload = { email: user.email, id: user.id, role: user.role };
@@ -163,11 +160,7 @@ export class AuthService {
         },
       };
     } catch (error) {
-      return {
-        result: 'error',
-        message: error.message || 'Failed to login user',
-        data: null,
-      };
+      throw error;
     }
   }
 
@@ -183,18 +176,17 @@ export class AuthService {
         token.split(' ')[1],
       );
 
-      console.log('User token is valid');
       return {
         result: 'success',
         message: 'User token is valid',
         data: rest,
       };
     } catch (error) {
-      return {
+      throw new UnauthorizedException({
         result: 'error',
         message: 'Invalid token',
         data: null,
-      };
+      });
     }
   }
 
@@ -211,31 +203,20 @@ export class AuthService {
       const user = await this.userRepository.findOne({
         where: { id },
       });
-      if (!user) {
-        return {
-          result: 'error',
-          message: 'User does not exist',
-          data: null,
-        };
+      if (user) {
+        // delete token
+        await this.userRepository.update(user.id, {
+          token: null,
+        });
       }
 
-      // delete token
-      await this.userRepository.update(user.id, {
-        token: null,
-      });
-
-      console.log('User logged out successfully');
       return {
         result: 'success',
         message: 'User logged out successfully',
         data: null,
       };
     } catch (error) {
-      return {
-        result: 'error',
-        message: 'Failed to logout user',
-        data: null,
-      };
+      throw error;
     }
   }
 }
