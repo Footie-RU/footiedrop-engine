@@ -54,7 +54,7 @@ export class KYCController {
 
   // Return list of all KYC records
   @Get('list')
-  async getKYCList() {
-    return this.kycService.getAllKYCRecords();
+  async getKYCList(@Param('page') page: number, @Param('limit') limit: number) {
+    return this.kycService.getAllKYCRecords(page, limit);
   }
 }

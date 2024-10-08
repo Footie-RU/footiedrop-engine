@@ -9,8 +9,8 @@ import { Repository } from 'typeorm';
 import { KYCStep, UserKYC } from 'src/entities/kyc.entity';
 import { User } from 'src/entities/user.entity';
 import { RequestResponse } from 'src/core/interfaces/index.interface';
-import * as zlib from 'zlib';
 import { EmailService } from 'src/core/services/mailer.service';
+import { CloudinaryService } from 'src/core/services/cloudinary.service';
 
 @Injectable()
 export class KYCService {
@@ -20,6 +20,7 @@ export class KYCService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private emailService: EmailService,
+    private cloudinaryService: CloudinaryService,
   ) {}
 
   /**
@@ -151,74 +152,71 @@ export class KYCService {
         throw new NotFoundException('KYC record not found');
       }
 
-      // skip if the document is already uploaded
+      // Skip if document is already uploaded
       if (userKYC[fileField]) {
-        // return success message
         return {
           result: 'success',
-          message: 'Document already uploaded',
+          message: `${fileField} already uploaded`,
           data: userKYC,
           statusCode: 200,
         };
       }
 
-      // Check if file.buffer is available
       if (!file.buffer) {
         throw new BadRequestException('File buffer is not available');
       }
 
-      const compressedBuffer = zlib.deflateSync(file.buffer);
+      // Change file name base on fileField
+      file.filename = fileField;
 
-      // Save the document as a base64 string
-      userKYC[fileField] = compressedBuffer.toString('base64');
+      // Upload document to Cloudinary and get the secure URL
+      const uploadResult = await this.cloudinaryService.uploadImage(
+        file,
+        userId,
+      );
+
+      if (!uploadResult.secure_url) {
+        throw new InternalServerErrorException('Cloudinary upload failed');
+      }
+
+      // Save the Cloudinary URL in the KYC record
+      userKYC[fileField] = uploadResult.secure_url;
 
       const updatedKYC = await this.kycRepository.save(userKYC);
 
-      // Update KYC step based on the uploaded document if the kyc is saved successfully
-      if (updatedKYC) {
-        if (fileField === 'internationalPassport') {
-          await this.kycRepository.update(updatedKYC.id, {
-            step: KYCStep.SUBMIT_SCHOOL_ID,
-          });
-        } else if (fileField === 'schoolID') {
-          await this.kycRepository.update(updatedKYC.id, {
-            step: KYCStep.SUBMIT_SELFIE,
-          });
-        } else if (fileField === 'selfie') {
-          await this.kycRepository.update(updatedKYC.id, {
-            step: KYCStep.REVIEW,
-          });
-        }
-      } else {
-        throw new InternalServerErrorException(
-          'An error occurred while saving the KYC document',
-        );
+      if (!updatedKYC) {
+        throw new InternalServerErrorException('Error saving KYC document');
       }
+
+      // Mapping KYC steps to file fields for cleaner progression logic
+      const stepMap = {
+        internationalPassport: KYCStep.SUBMIT_SCHOOL_ID,
+        schoolID: KYCStep.SUBMIT_SELFIE,
+        selfie: KYCStep.REVIEW,
+      };
+
+      await this.kycRepository.update(updatedKYC.id, {
+        step: stepMap[fileField],
+      });
 
       return {
         result: 'success',
-        message: 'Document uploaded successfully',
+        message: `${fileField} uploaded successfully`,
         data: userKYC,
         statusCode: 201, // HttpStatus.CREATED
       };
     } catch (error) {
-      console.error('Error uploading document:', error);
+      console.error('Error uploading document');
 
-      if (error instanceof NotFoundException) {
-        // Specific exception for not found
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
 
-      // Handle other specific errors if needed
-      // For example, if the file is missing or invalid, you might use BadRequestException
-      if (error instanceof BadRequestException) {
-        throw new BadRequestException('Bad request: ' + error.message);
-      }
-
-      // For unexpected errors
-      throw new InternalServerErrorException(
-        'An error occurred while uploading the document',
-      );
+      // Handle unexpected errors
+      throw new InternalServerErrorException('Error uploading the document');
     }
   }
 
@@ -312,25 +310,49 @@ export class KYCService {
    * @todo Implement this method
    * @todo Add the correct return type
    */
-  async getAllKYCRecords(): Promise<RequestResponse> {
+  private kycCache: any = null;
+
+  async getAllKYCRecords(
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<RequestResponse> {
     try {
-      // Fetch all KYC records including the user details
-      const kycRecords = await this.kycRepository.find({
+      if (this.kycCache) {
+        return this.kycCache;
+      }
+
+      const [kycRecords, total] = await this.kycRepository.findAndCount({
         relations: ['user'],
+        skip: (page - 1) * limit,
+        take: limit,
       });
 
-      // Exclude kyc from user entity to avoid circular reference
-      kycRecords.forEach((kyc) => {
-        delete kyc.user.kyc;
+      const formattedRecords = kycRecords.map((kyc) => {
+        if (kyc.user && kyc.user.kyc) {
+          delete kyc.user.kyc;
+        }
+
+        return kyc;
       });
 
-      // Return the list of KYC records
-      return {
+      this.kycCache = {
         result: 'success',
-        message: 'List of all KYC records',
-        data: kycRecords,
+        message: 'List of KYC records',
+        data: {
+          records: formattedRecords,
+          currentPage: page,
+          totalPages: Math.ceil(total / limit),
+          totalRecords: total,
+        },
         statusCode: 200,
       };
+
+      // Set cache to expire after a certain time
+      setTimeout(() => {
+        this.kycCache = null;
+      }, 60000); // Cache expires after 60 seconds
+
+      return this.kycCache;
     } catch (error) {
       console.error('Error fetching KYC records:', error);
       return {
