@@ -141,24 +141,17 @@ export class KYCService {
     status: 'approved' | 'rejected',
     rejectionReason?: string,
   ): Promise<RequestResponse> {
-    console.log(`Starting updateKYCStatus with ID: ${id}, Status: ${status}`);
-
     try {
       // Fetch the KYC record based on user ID
       const kyc = await this.kycRepository.findOneByOrFail({ user: { id } });
       const user = await this.userRepository.findOne({ where: { id } });
 
-      console.log(`Fetched KYC record for user ID ${id}:`, kyc);
-      console.log(`Fetched user details for ID ${id}:`, user);
-
       // Update status and rejection reason if rejected
       kyc.status = status;
-      console.log(`Setting KYC status to ${status}`);
 
       if (status === 'rejected') {
         kyc.rejectionReason = rejectionReason;
-        kyc.step = KYCStep.START;
-        console.log(`Rejection reason set to: ${rejectionReason}`);
+        kyc.step = KYCStep.REJECTED;
 
         // Send rejection email notification
         const rejectionEmailData = {
@@ -167,8 +160,6 @@ export class KYCService {
           text: `Your KYC verification has been rejected. Reason: ${rejectionReason}`,
         };
 
-        console.log('Sending rejection email with data:', rejectionEmailData);
-
         const emailResponse = await this.emailService.sendEmail(
           'team',
           rejectionEmailData.to,
@@ -176,20 +167,16 @@ export class KYCService {
           rejectionEmailData.text,
         );
 
-        console.log('Rejection email response:', emailResponse);
-
         if (emailResponse.rejected && emailResponse.rejected.length > 0) {
           kyc.documentsRejectedEmailSent = false;
           console.error('Failed to send rejection email notification to user');
         } else {
           kyc.documentsRejectedEmailSent = true;
-          console.log('Rejection email sent successfully');
         }
       }
 
       if (status === 'approved') {
         kyc.step = KYCStep.COMPLETE;
-        console.log(`Setting KYC step to COMPLETE for approval`);
 
         // Send approval email notification
         const approvalEmailData = {
@@ -198,8 +185,6 @@ export class KYCService {
           text: 'Your KYC verification has been approved. You can now proceed to use the platform.',
         };
 
-        console.log('Sending approval email with data:', approvalEmailData);
-
         const emailResponse = await this.emailService.sendEmail(
           'team',
           approvalEmailData.to,
@@ -207,24 +192,16 @@ export class KYCService {
           approvalEmailData.text,
         );
 
-        console.log('Approval email response:', emailResponse);
-
-        if (emailResponse.rejected) {
-          await this.kycRepository.update(kyc.id, {
-            documentsVerifiedEmailSent: false,
-          });
+        if (emailResponse.rejected && emailResponse.rejected.length > 0) {
+          kyc.documentsVerifiedEmailSent = false;
           console.error('Failed to send approval email notification to user');
         } else {
-          await this.kycRepository.update(kyc.id, {
-            documentsVerifiedEmailSent: true,
-          });
-          console.log('Approval email sent successfully');
+          kyc.documentsVerifiedEmailSent = true;
         }
       }
 
       // Save the KYC record with updated status and step
       const savedKyc = await this.kycRepository.save(kyc);
-      console.log('KYC record saved:', savedKyc);
 
       return {
         result: 'success',
