@@ -23,13 +23,18 @@ export class KYCController {
     return this.kycService.createKYC(userId);
   }
 
-  @Patch(':id/status')
+  @Patch('updateStatus/:id/:status')
   async updateKYCStatus(
     @Param('id') id: string,
     @Body('status') status: 'approved' | 'rejected',
     @Body('rejectionReason') rejectionReason?: string,
   ) {
     return this.kycService.updateKYCStatus(id, status, rejectionReason);
+  }
+
+  @Patch('update/:id')
+  async updateKYC(@Param('id') id: string, @Body() data: any) {
+    return this.kycService.updateKYC(id, data);
   }
 
   @Post('uploadDocument/:userId/:file')
