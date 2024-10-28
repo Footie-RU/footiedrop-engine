@@ -16,6 +16,7 @@ export enum KYCStep {
   SUBMIT_RUSSIAN_PASSPORT = 'submit_russian_passport',
   REVIEW = 'review',
   COMPLETE = 'complete',
+  REJECTED = 'rejected',
 }
 
 @Entity('user_kyc')
@@ -51,7 +52,7 @@ export class UserKYC {
   })
   status: 'pending' | 'approved' | 'rejected';
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: 'mediumtext', nullable: true })
   rejectionReason: string | null;
 
   @Column({
