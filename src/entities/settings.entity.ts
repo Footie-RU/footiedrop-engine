@@ -10,6 +10,9 @@ export class Settings {
   @Column({ default: true })
   notificationsSms: boolean;
 
+  @Column({ type: 'text', default: '0,0,0,0', nullable: false })
+  permission: string;
+
   @Column({ default: false, nullable: true })
   securityTwoFactorAuth: boolean;
 

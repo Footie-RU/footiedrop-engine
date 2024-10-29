@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -11,6 +12,7 @@ import { User } from 'src/entities/user.entity';
 import { RequestResponse } from 'src/core/interfaces/index.interface';
 import { EmailService } from 'src/core/services/mailer.service';
 import { CloudinaryService } from 'src/core/services/cloudinary.service';
+import { checkPermission } from 'src/core/helpers/admin.helper';
 
 @Injectable()
 export class KYCService {
@@ -22,6 +24,50 @@ export class KYCService {
     private emailService: EmailService,
     private cloudinaryService: CloudinaryService,
   ) {}
+
+  // Helper methods for sending email notifications
+  private async sendApprovalEmail(user: User): Promise<boolean> {
+    try {
+      const approvalEmailData = {
+        to: user.email,
+        subject: 'Your KYC Verification Passed',
+        text: 'Your KYC verification has been approved. You can now proceed to use the platform.',
+      };
+      const emailResponse = await this.emailService.sendEmail(
+        'team',
+        approvalEmailData.to,
+        approvalEmailData.subject,
+        approvalEmailData.text,
+      );
+      return !(emailResponse.rejected && emailResponse.rejected.length > 0);
+    } catch (error) {
+      console.error('Error sending approval email:', error);
+      return false;
+    }
+  }
+
+  private async sendRejectionEmail(
+    user: User,
+    reason: string,
+  ): Promise<boolean> {
+    try {
+      const rejectionEmailData = {
+        to: user.email,
+        subject: 'Your KYC Verification Failed',
+        text: `Your KYC verification has been rejected. Reason: ${reason}`,
+      };
+      const emailResponse = await this.emailService.sendEmail(
+        'team',
+        rejectionEmailData.to,
+        rejectionEmailData.subject,
+        rejectionEmailData.text,
+      );
+      return !(emailResponse.rejected && emailResponse.rejected.length > 0);
+    } catch (error) {
+      console.error('Error sending rejection email:', error);
+      return false;
+    }
+  }
 
   /**
    * Create a new KYC record
@@ -154,50 +200,16 @@ export class KYCService {
         kyc.step = KYCStep.REJECTED;
 
         // Send rejection email notification
-        const rejectionEmailData = {
-          to: user.email,
-          subject: 'Your KYC Verification Failed',
-          text: `Your KYC verification has been rejected. Reason: ${rejectionReason}`,
-        };
-
-        const emailResponse = await this.emailService.sendEmail(
-          'team',
-          rejectionEmailData.to,
-          rejectionEmailData.subject,
-          rejectionEmailData.text,
-        );
-
-        if (emailResponse.rejected && emailResponse.rejected.length > 0) {
-          kyc.documentsRejectedEmailSent = false;
-          console.error('Failed to send rejection email notification to user');
-        } else {
-          kyc.documentsRejectedEmailSent = true;
-        }
+        const emailSent = await this.sendRejectionEmail(user, rejectionReason);
+        kyc.documentsRejectedEmailSent = emailSent;
       }
 
       if (status === 'approved') {
         kyc.step = KYCStep.COMPLETE;
 
         // Send approval email notification
-        const approvalEmailData = {
-          to: user.email,
-          subject: 'Your KYC Verification Passed',
-          text: 'Your KYC verification has been approved. You can now proceed to use the platform.',
-        };
-
-        const emailResponse = await this.emailService.sendEmail(
-          'team',
-          approvalEmailData.to,
-          approvalEmailData.subject,
-          approvalEmailData.text,
-        );
-
-        if (emailResponse.rejected && emailResponse.rejected.length > 0) {
-          kyc.documentsVerifiedEmailSent = false;
-          console.error('Failed to send approval email notification to user');
-        } else {
-          kyc.documentsVerifiedEmailSent = true;
-        }
+        const emailSent = await this.sendApprovalEmail(user);
+        kyc.documentsVerifiedEmailSent = emailSent;
       }
 
       // Save the KYC record with updated status and step
@@ -237,14 +249,14 @@ export class KYCService {
       }
 
       // Skip if document is already uploaded
-      if (userKYC[fileField]) {
-        return {
-          result: 'success',
-          message: `${fileField} already uploaded`,
-          data: userKYC,
-          statusCode: 200,
-        };
-      }
+      // if (userKYC[fileField]) {
+      //   return {
+      //     result: 'success',
+      //     message: `${fileField} already uploaded`,
+      //     data: userKYC,
+      //     statusCode: 200,
+      //   };
+      // }
 
       if (!file.buffer) {
         throw new BadRequestException('File buffer is not available');
@@ -281,6 +293,7 @@ export class KYCService {
 
       await this.kycRepository.update(updatedKYC.id, {
         step: stepMap[fileField],
+        status: 'pending',
       });
 
       return {
@@ -341,14 +354,13 @@ export class KYCService {
             emailData.text,
           );
 
-          if (emailResponse.rejected) {
+          if (emailResponse.rejected.length > 0) {
             console.error('Failed to send email notification to user');
+            userKYC.documentsInReviewEmailSent = false;
           }
 
-          if (emailResponse.accepted) {
-            await this.kycRepository.update(userKYC.id, {
-              documentsInReviewEmailSent: true,
-            });
+          if (emailResponse.accepted.length > 0) {
+            userKYC.documentsInReviewEmailSent = true;
           }
         }
 
@@ -446,6 +458,61 @@ export class KYCService {
         statusCode: 500,
         error: error.message,
       };
+    }
+  }
+
+  /**
+   * Delete KYC Record
+   */
+  async deleteKYC(
+    userId: string,
+    id: string,
+    adminId: string,
+  ): Promise<RequestResponse> {
+    try {
+      const admin = await this.userRepository.findOneBy({ id: adminId });
+
+      // Check if admin exists and has the delete permission
+      if (!admin) {
+        throw new NotFoundException(
+          'Admin user was not found, permission denied!',
+        );
+      }
+
+      // Use checkPermission helper to validate delete permission
+      checkPermission(admin.settings.permission, 3, 'delete');
+
+      // Check if KYC record exists for the given user
+      const kyc = await this.kycRepository.findOne({
+        where: { id, user: { id: userId } },
+      });
+
+      if (!kyc) {
+        throw new NotFoundException('KYC record not found');
+      }
+
+      // Proceed to delete KYC record
+      await this.kycRepository.delete(kyc.id);
+
+      return {
+        result: 'success',
+        message: 'KYC record deleted successfully',
+        data: null,
+        statusCode: 200,
+      };
+    } catch (error) {
+      console.error('Error deleting KYC record:', error);
+      // Handle specific exceptions to rethrow them correctly
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error; // Rethrow specific exceptions
+      }
+
+      throw new InternalServerErrorException(
+        'An error occurred while deleting the KYC record',
+      );
     }
   }
 }
