@@ -112,7 +112,7 @@ export class User {
   @OneToOne(() => UserKYC, (kyc) => kyc.user, {
     cascade: true,
     eager: true,
-    onDelete: 'CASCADE',
+    onDelete: 'SET NULL',
   })
   @JoinColumn()
   kyc: UserKYC;

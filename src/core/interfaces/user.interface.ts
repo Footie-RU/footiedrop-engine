@@ -39,6 +39,7 @@ interface Settings {
     twoFactorAuth?: boolean;
     verified: boolean;
   };
+  permissions: string;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

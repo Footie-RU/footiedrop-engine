@@ -73,4 +73,8 @@ export class UserKYC {
   // documents-rejected email sent
   @Column({ type: 'boolean', default: false })
   documentsRejectedEmailSent: boolean;
+
+  // documents-verified sms sent
+  @Column({ type: 'boolean', default: false })
+  documentsVerifiedSmsSent: boolean;
 }

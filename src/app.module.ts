@@ -49,7 +49,7 @@ const Entities = [
       password: process.env.DB_PASSWORD,
       database: process.env.DB_DATABASE,
       entities: [...Entities],
-      synchronize: true,
+      // synchronize: true,
     }),
     ...Modules,
   ],
