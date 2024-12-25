@@ -197,26 +197,49 @@ export class AuthService {
    */
   async logoutUser(token: string): Promise<RequestResponse> {
     try {
-      const { id } = await this.jwtService.verifyAsync(token.split(' ')[1]);
+      // Validate token format
+      const parts = token.split(' ');
+      if (parts.length !== 2 || parts[0] !== 'Bearer') {
+        throw new Error('Invalid token format');
+      }
 
-      // get user
-      const user = await this.userRepository.findOne({
-        where: { id },
-      });
+      // Verify token and extract user ID
+      let decoded: any;
+      try {
+        decoded = await this.jwtService.verifyAsync(parts[1]);
+      } catch (error) {
+        return {
+          result: 'error',
+          message: 'Session expired. User is already logged out.',
+          data: null,
+        };
+      }
+
+      const { id } = decoded;
+
+      // Find the user by ID
+      const user = await this.userRepository.findOne({ where: { id } });
       if (user) {
-        // delete token
-        await this.userRepository.update(user.id, {
-          token: null,
-        });
+        // Update user to clear the token
+        await this.userRepository.update(user.id, { token: null });
       }
 
       return {
         result: 'success',
-        message: 'User logged out successfully',
+        message: 'Logged out successfully',
         data: null,
       };
     } catch (error) {
-      throw error;
+      // Log error for debugging purposes
+      console.error('Logout error:', error.message);
+
+      // Throw a formatted error
+      return {
+        result: 'error',
+        message: 'Logout failed. Please try again.',
+        error: error.message,
+        data: null,
+      };
     }
   }
 }

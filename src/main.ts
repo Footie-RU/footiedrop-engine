@@ -14,7 +14,7 @@ async function bootstrap() {
   // Serve static files from the 'uploads' directory
   app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
 
-  await app.listen(3000);
+  await app.listen(3000, '0.0.0.0');
   console.log(`Application is running on: ${await app.getUrl()}`);
 }
 bootstrap();

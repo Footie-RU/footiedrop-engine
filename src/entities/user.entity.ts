@@ -79,6 +79,9 @@ export class User {
   @Column({ default: 'customer' }) // Assuming 'customer' is the default role
   role: 'customer' | 'courier' | 'admin';
 
+  @Column({ default: 'offline' })
+  status: 'online' | 'offline';
+
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
