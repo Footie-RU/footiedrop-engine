@@ -69,9 +69,11 @@ export class AuthService {
 
       // Step 4: Check for existing token and validity
       if (user.token) {
-        const decoded = await this.jwtService.verifyAsync(user.token);
+        try {
+          // Validate token
+          await this.validateToken(user.token, user.id);
 
-        if (decoded.id === user.id) {
+          // If token is valid, return a successful login
           return {
             result: 'success',
             message: 'User logged in successfully',
@@ -82,6 +84,13 @@ export class AuthService {
               role: user.role,
             },
           };
+        } catch (error) {
+          if (error.name === 'UnauthorizedException') {
+            // Clear the expired token
+            await this.userRepository.update(user.id, { token: null });
+          } else {
+            throw error;
+          }
         }
       }
 
@@ -157,9 +166,11 @@ export class AuthService {
       }
 
       if (user.token) {
-        const decoded = await this.jwtService.verifyAsync(user.token);
+        try {
+          // Validate token
+          await this.validateToken(user.token, user.id);
 
-        if (decoded.id === user.id) {
+          // If token is valid, return a successful login
           return {
             result: 'success',
             message: 'User logged in successfully',
@@ -170,6 +181,13 @@ export class AuthService {
               role: user.role,
             },
           };
+        } catch (error) {
+          if (error.name === 'UnauthorizedException') {
+            // Clear the expired token
+            await this.userRepository.update(user.id, { token: null });
+          } else {
+            throw error;
+          }
         }
       }
 
@@ -220,6 +238,24 @@ export class AuthService {
         message: 'Invalid token',
         data: null,
       });
+    }
+  }
+
+  private async validateToken(token: string, userId: string): Promise<void> {
+    try {
+      const decoded = await this.jwtService.verifyAsync(token);
+      if (decoded.id !== userId) {
+        throw new UnauthorizedException('Token does not match user ID');
+      }
+    } catch (error) {
+      if (error.name === 'TokenExpiredError') {
+        // console.error('Token expired. Prompt user to reauthenticate.');
+        throw new UnauthorizedException(
+          'Session expired. Please log in again.',
+        );
+      } else {
+        throw new UnauthorizedException('Invalid token');
+      }
     }
   }
 

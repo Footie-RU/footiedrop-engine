@@ -641,4 +641,25 @@ export class UserService {
       data: user,
     };
   }
+
+  // Method to get user status
+  async getUserStatus(userId: string): Promise<RequestResponse> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      throw new HttpException(
+        {
+          success: false,
+          message: 'User not found.',
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return {
+      result: 'success',
+      message: 'User status fetched successfully.',
+      data: user.status,
+    };
+  }
 }

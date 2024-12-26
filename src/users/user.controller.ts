@@ -104,8 +104,13 @@ export class UserController {
     return this.userService.changeEmail(payload.email, payload.newEmail);
   }
 
-  @Patch(':id/toggle-status')
+  @Patch('toggle-status/:id')
   toggleUserStatus(@Param('id') id: string): Promise<RequestResponse> {
     return this.userService.toggleUserStatus(id);
+  }
+
+  @Get('status/:id')
+  getUserStatus(@Param('id') id: string): Promise<RequestResponse> {
+    return this.userService.getUserStatus(id);
   }
 }
