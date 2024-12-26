@@ -67,17 +67,35 @@ export class AuthService {
         });
       }
 
-      // Step 4: Generate JWT token
+      // Step 4: Check for existing token and validity
+      if (user.token) {
+        const decoded = await this.jwtService.verifyAsync(user.token);
+
+        if (decoded.id === user.id) {
+          return {
+            result: 'success',
+            message: 'User logged in successfully',
+            data: {
+              token: user.token,
+              userId: user.id,
+              email: user.email,
+              role: user.role,
+            },
+          };
+        }
+      }
+
+      // Step 5: Generate JWT token
       const jwtPayload = { email: user.email, id: user.id, role: user.role };
       const token = await this.jwtService.signAsync(jwtPayload);
 
-      // Step 5: Update last login date and token
+      // Step 6: Update last login date and token
       await this.userRepository.update(user.id, {
         lastLogin: new Date(),
         token: token,
       });
 
-      // Step 6: Successful Login
+      // Step 7: Successful Login
       return {
         result: 'success',
         message: 'User logged in successfully',
@@ -138,9 +156,24 @@ export class AuthService {
         });
       }
 
-      const jwtPayload = { email: user.email, id: user.id, role: user.role };
+      if (user.token) {
+        const decoded = await this.jwtService.verifyAsync(user.token);
 
-      // get token
+        if (decoded.id === user.id) {
+          return {
+            result: 'success',
+            message: 'User logged in successfully',
+            data: {
+              token: user.token,
+              userId: user.id,
+              email: user.email,
+              role: user.role,
+            },
+          };
+        }
+      }
+
+      const jwtPayload = { email: user.email, id: user.id, role: user.role };
       const token = await this.jwtService.signAsync(jwtPayload);
 
       // Update last login date
