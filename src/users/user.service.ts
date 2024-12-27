@@ -1,6 +1,8 @@
 import {
   BadRequestException,
   ConflictException,
+  HttpException,
+  HttpStatus,
   Injectable,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -585,5 +587,79 @@ export class UserService {
         data: null,
       };
     }
+  }
+
+  // Method to check online conditions
+  private checkOnlineConditions(user: User): void {
+    const conditions = [
+      {
+        check: () => user.settings.verified,
+        message: 'Email must be verified to come online.',
+      },
+      // Additional conditions can be added here
+    ];
+
+    for (const condition of conditions) {
+      if (!condition.check()) {
+        throw new HttpException(
+          {
+            success: false,
+            message: condition.message,
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+  }
+
+  // Method to toggle user status
+  async toggleUserStatus(userId: string): Promise<RequestResponse> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      throw new HttpException(
+        {
+          success: false,
+          message: 'User not found.',
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    if (user.status === 'offline') {
+      this.checkOnlineConditions(user); // Ensure conditions are met before going online
+      user.status = 'online';
+    } else {
+      user.status = 'offline';
+    }
+
+    await this.userRepository.save(user);
+
+    return {
+      result: 'success',
+      message: `User status updated to ${user.status}.`,
+      data: user,
+    };
+  }
+
+  // Method to get user status
+  async getUserStatus(userId: string): Promise<RequestResponse> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      throw new HttpException(
+        {
+          success: false,
+          message: 'User not found.',
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return {
+      result: 'success',
+      message: 'User status fetched successfully.',
+      data: user.status,
+    };
   }
 }

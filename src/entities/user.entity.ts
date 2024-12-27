@@ -7,7 +7,7 @@ import {
   JoinColumn,
   OneToOne,
 } from 'typeorm';
-import { Order } from './order.entity';
+// import { Order } from './order.entity';
 import { Payment } from './payment.entity';
 import { Settings } from './settings.entity';
 import { UserKYC } from './kyc.entity';
@@ -79,6 +79,9 @@ export class User {
   @Column({ default: 'customer' }) // Assuming 'customer' is the default role
   role: 'customer' | 'courier' | 'admin';
 
+  @Column({ default: 'offline' })
+  status: 'online' | 'offline';
+
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
@@ -92,8 +95,8 @@ export class User {
   @Column({ type: 'timestamp', default: null, nullable: true })
   lastLogin: Date;
 
-  @OneToMany(() => Order, (order) => order.user)
-  orders: Order[];
+  // @OneToMany(() => Order, (order) => order.user)
+  // orders: Order[];
 
   @OneToMany(() => Payment, (payment) => payment.user)
   payments: Payment[];

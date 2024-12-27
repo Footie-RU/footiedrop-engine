@@ -67,17 +67,44 @@ export class AuthService {
         });
       }
 
-      // Step 4: Generate JWT token
+      // Step 4: Check for existing token and validity
+      if (user.token) {
+        try {
+          // Validate token
+          await this.validateToken(user.token, user.id);
+
+          // If token is valid, return a successful login
+          return {
+            result: 'success',
+            message: 'User logged in successfully',
+            data: {
+              token: user.token,
+              userId: user.id,
+              email: user.email,
+              role: user.role,
+            },
+          };
+        } catch (error) {
+          if (error.name === 'UnauthorizedException') {
+            // Clear the expired token
+            await this.userRepository.update(user.id, { token: null });
+          } else {
+            throw error;
+          }
+        }
+      }
+
+      // Step 5: Generate JWT token
       const jwtPayload = { email: user.email, id: user.id, role: user.role };
       const token = await this.jwtService.signAsync(jwtPayload);
 
-      // Step 5: Update last login date and token
+      // Step 6: Update last login date and token
       await this.userRepository.update(user.id, {
         lastLogin: new Date(),
         token: token,
       });
 
-      // Step 6: Successful Login
+      // Step 7: Successful Login
       return {
         result: 'success',
         message: 'User logged in successfully',
@@ -138,9 +165,33 @@ export class AuthService {
         });
       }
 
-      const jwtPayload = { email: user.email, id: user.id, role: user.role };
+      if (user.token) {
+        try {
+          // Validate token
+          await this.validateToken(user.token, user.id);
 
-      // get token
+          // If token is valid, return a successful login
+          return {
+            result: 'success',
+            message: 'User logged in successfully',
+            data: {
+              token: user.token,
+              userId: user.id,
+              email: user.email,
+              role: user.role,
+            },
+          };
+        } catch (error) {
+          if (error.name === 'UnauthorizedException') {
+            // Clear the expired token
+            await this.userRepository.update(user.id, { token: null });
+          } else {
+            throw error;
+          }
+        }
+      }
+
+      const jwtPayload = { email: user.email, id: user.id, role: user.role };
       const token = await this.jwtService.signAsync(jwtPayload);
 
       // Update last login date
@@ -190,6 +241,24 @@ export class AuthService {
     }
   }
 
+  private async validateToken(token: string, userId: string): Promise<void> {
+    try {
+      const decoded = await this.jwtService.verifyAsync(token);
+      if (decoded.id !== userId) {
+        throw new UnauthorizedException('Token does not match user ID');
+      }
+    } catch (error) {
+      if (error.name === 'TokenExpiredError') {
+        // console.error('Token expired. Prompt user to reauthenticate.');
+        throw new UnauthorizedException(
+          'Session expired. Please log in again.',
+        );
+      } else {
+        throw new UnauthorizedException('Invalid token');
+      }
+    }
+  }
+
   /**
    * Logout user
    * @param {string} token
@@ -197,26 +266,49 @@ export class AuthService {
    */
   async logoutUser(token: string): Promise<RequestResponse> {
     try {
-      const { id } = await this.jwtService.verifyAsync(token.split(' ')[1]);
+      // Validate token format
+      const parts = token.split(' ');
+      if (parts.length !== 2 || parts[0] !== 'Bearer') {
+        throw new Error('Invalid token format');
+      }
 
-      // get user
-      const user = await this.userRepository.findOne({
-        where: { id },
-      });
+      // Verify token and extract user ID
+      let decoded: any;
+      try {
+        decoded = await this.jwtService.verifyAsync(parts[1]);
+      } catch (error) {
+        return {
+          result: 'error',
+          message: 'Session expired. User is already logged out.',
+          data: null,
+        };
+      }
+
+      const { id } = decoded;
+
+      // Find the user by ID
+      const user = await this.userRepository.findOne({ where: { id } });
       if (user) {
-        // delete token
-        await this.userRepository.update(user.id, {
-          token: null,
-        });
+        // Update user to clear the token
+        await this.userRepository.update(user.id, { token: null });
       }
 
       return {
         result: 'success',
-        message: 'User logged out successfully',
+        message: 'Logged out successfully',
         data: null,
       };
     } catch (error) {
-      throw error;
+      // Log error for debugging purposes
+      console.error('Logout error:', error.message);
+
+      // Throw a formatted error
+      return {
+        result: 'error',
+        message: 'Logout failed. Please try again.',
+        error: error.message,
+        data: null,
+      };
     }
   }
 }

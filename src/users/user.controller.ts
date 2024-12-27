@@ -1,4 +1,12 @@
-import { Controller, Get, Param, Post, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Post,
+  Body,
+  UseGuards,
+  Patch,
+} from '@nestjs/common';
 import { SkipAuth } from 'src/core/decorators/meta.decorator';
 import {
   ChangeEmailDto,
@@ -94,5 +102,15 @@ export class UserController {
   @Post('changeEmail')
   changeEmail(@Body() payload: ChangeEmailDto): Promise<RequestResponse> {
     return this.userService.changeEmail(payload.email, payload.newEmail);
+  }
+
+  @Patch('toggle-status/:id')
+  toggleUserStatus(@Param('id') id: string): Promise<RequestResponse> {
+    return this.userService.toggleUserStatus(id);
+  }
+
+  @Get('status/:id')
+  getUserStatus(@Param('id') id: string): Promise<RequestResponse> {
+    return this.userService.getUserStatus(id);
   }
 }
