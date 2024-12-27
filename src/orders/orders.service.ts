@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/entities/user.entity';
 import { Repository } from 'typeorm';
@@ -7,7 +7,6 @@ import { Order } from 'src/entities/order.entity';
 import { RequestResponse } from 'src/core/interfaces/index.interface';
 import { CreateOrderDto, UpdateOrderStatusDto } from 'src/core/dto/orders.dto';
 import { JwtUser } from 'src/core/decorators/extract-user.decorator';
-import { OrderStatus } from 'src/core/interfaces/orders.interface';
 import { MessageService } from 'src/messages/message.service';
 // import { NewOrder } from 'src/core/interfaces/orders.interface';
 
@@ -42,7 +41,7 @@ export class OrdersService {
         };
       }
 
-      const neworder = await this.orderRepository.save({
+      const newOrder = await this.orderRepository.save({
         ...newOrderDTO,
         user: user.id as any,
       });
@@ -50,7 +49,7 @@ export class OrdersService {
       return {
         result: 'success',
         message: 'Order created successfully',
-        data: neworder,
+        data: newOrder,
       };
     } catch (error) {
       throw new Error('Failed to create order');
@@ -59,66 +58,85 @@ export class OrdersService {
 
   async findAll(): Promise<RequestResponse> {
     try {
-      const orders = await this.orderRepository.find({ relations: ['user'] });
+      const orders = await this.orderRepository.find(); //{ relations: ['user'] });
       return {
         result: 'success',
         message: 'Orders fetched successfully',
         data: orders,
       };
     } catch (error) {
-      throw new Error('Failed to fetch orders:' + error);
+      throw new Error('Failed to fetch orders: ' + error);
     }
   }
 
-  findOne(id: string) {
-    return this.orderRepository.findOne({ where: { id }, relations: ['user'] });
-  }
-
-  update(id: string, updateOrderDto: any) {
-    return this.orderRepository.update(id, updateOrderDto);
-  }
-
-  remove(id: string) {
-    return this.orderRepository.delete(id);
-  }
-
-  async updateOrderStatus(
-    orderId: string,
-    dto: UpdateOrderStatusDto,
-  ): Promise<Order> {
-    const order = await this.orderRepository.findOne({
-      where: { id: orderId },
-      relations: ['user'],
-    });
-    if (!order) {
-      throw new NotFoundException('Order not found');
-    }
-
-    const user = await this.userRepository.findOne({
-      where: { id: dto.userId },
-    });
-    if (!user) {
-      throw new Error('Courier not found or invalid role');
-    } else if (user.role === 'courier') {
-      order.courier = user;
-    } else if (user.role === 'customer') {
-    }
-
-    if (
-      order.status !== OrderStatus.Accepted &&
-      dto.status === OrderStatus.Accepted
-    ) {
-      const initialMessageContent = order.details.package.message;
-      await this.messageService.createMessage(order.user, {
-        content: initialMessageContent,
-        orderId: order.id,
+  async findOne(id: string): Promise<RequestResponse> {
+    try {
+      const order = await this.orderRepository.findOne({
+        where: { id },
+        // relations: ['user'],
       });
+
+      if (!order) {
+        return {
+          result: 'error',
+          message: 'Order not found!',
+          data: null,
+        };
+      }
+
+      return {
+        result: 'success',
+        message: 'Order fetched successfully',
+        data: order,
+      };
+    } catch (error) {
+      throw new Error('Failed to fetch order: ' + error);
     }
+  }
 
-    order.status = dto.status;
+  async update(
+    id: string,
+    updateOrderDto: UpdateOrderStatusDto,
+  ): Promise<RequestResponse> {
+    try {
+      const result = await this.orderRepository.update(id, updateOrderDto);
+      if (result.affected === 0) {
+        return {
+          result: 'error',
+          message: 'Order not found!',
+          data: null,
+        };
+      }
 
-    await this.orderRepository.save(order);
+      const updatedOrder = await this.findOne(id);
+      return {
+        result: 'success',
+        message: 'Order updated successfully',
+        data: updatedOrder,
+      };
+    } catch (error) {
+      throw new Error('Failed to update order: ' + error);
+    }
+  }
 
-    return order;
+  async remove(id: string): Promise<RequestResponse> {
+    try {
+      const result = await this.orderRepository.delete(id);
+      if (result.affected === 0) {
+        return {
+          result: 'error',
+          message: 'Order not found!',
+          data: null,
+        };
+      }
+
+      return {
+        result: 'success',
+        message: 'Order deleted successfully',
+        data: null,
+      };
+    } catch (error) {
+      throw new Error('Failed to delete order: ' + error);
+    }
   }
 }

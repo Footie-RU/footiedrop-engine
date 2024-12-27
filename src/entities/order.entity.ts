@@ -48,8 +48,8 @@ export class Order {
   @ManyToOne(() => User, (user) => user.id)
   courier: User;
 
-  @ManyToOne(() => User, (user) => user.id)
-  user: User;
+  // @ManyToOne(() => User, (user) => user.id)
+  // user: User;
 
   @OneToMany(() => Message, (message) => message.order)
   messages: Message[];

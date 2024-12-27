@@ -8,6 +8,7 @@ import {
   IsDefined,
   IsUUID,
   IsEnum,
+  IsOptional,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { OrderStatus } from '../interfaces/orders.interface';
@@ -46,7 +47,7 @@ class RecipientDto {
   readonly phone: string;
 
   @IsEmail()
-  @IsNotEmpty()
+  @IsOptional()
   readonly email: string;
 }
 
