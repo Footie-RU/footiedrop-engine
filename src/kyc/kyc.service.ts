@@ -268,6 +268,7 @@ export class KYCService {
       // Upload document to Cloudinary and get the secure URL
       const uploadResult = await this.cloudinaryService.uploadImage(
         file,
+        'kyc',
         userId,
       );
 

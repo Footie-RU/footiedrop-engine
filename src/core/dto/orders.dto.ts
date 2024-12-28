@@ -69,14 +69,15 @@ class PackageDto {
   @IsNotEmpty()
   readonly size: string;
 
-  @IsString()
-  readonly image: string;
+  // @IsString()
+  // readonly image: string;
 
   @IsString()
   @IsNotEmpty()
   readonly modeOfDelivery: string;
 
   @IsString()
+  @IsOptional()
   readonly message: string;
 }
 
@@ -140,6 +141,10 @@ class PaymentDto {
   @IsNumber()
   @IsNotEmpty()
   readonly price: number;
+
+  @IsString()
+  @IsNotEmpty()
+  readonly currency: string;
 }
 
 // DTO for NewOrder
