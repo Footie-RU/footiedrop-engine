@@ -5,7 +5,7 @@ import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 export class CloudinaryService {
   constructor() {
     // Log Cloudinary configuration setup
-    console.log('Configuring Cloudinary...');
+    // console.log('Configuring Cloudinary...');
     cloudinary.config({
       cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
       api_key: process.env.CLOUDINARY_API_KEY,
@@ -14,7 +14,7 @@ export class CloudinaryService {
 
     // Log to verify config is loaded
     if (process.env.CLOUDINARY_CLOUD_NAME) {
-      console.log('Cloudinary configuration loaded successfully');
+      // console.log('Cloudinary configuration loaded successfully');
     } else {
       console.error('Error: Cloudinary configuration is missing');
       throw new InternalServerErrorException(
@@ -34,14 +34,14 @@ export class CloudinaryService {
     const dataUrl = `data:${mimeType};base64,${base64Image}`;
 
     // Log the start of the upload process
-    console.log('Uploading image to Cloudinary...');
-    console.log(`Folder: footiedrop/KYC/${folder}`);
+    // console.log('Uploading image to Cloudinary...');
+    // console.log(`Folder: footiedrop/${folder}`);
 
     return new Promise((resolve, reject) => {
       cloudinary.uploader.upload(
         dataUrl,
         {
-          folder: `footiedrop/KYC/${folder}`,
+          folder: `footiedrop/${folder}`,
           resource_type: 'auto',
           filename_override: filename,
         },
@@ -56,7 +56,7 @@ export class CloudinaryService {
           }
 
           // Log the success of the upload and the returned result
-          console.log('Image uploaded successfully:', result);
+          // console.log('Image uploaded successfully:', result);
 
           resolve(result);
         },
